@@ -743,62 +743,67 @@
         </div>
     </div>
 
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <script>
-        // 初始化数据库
-        function initDB() {
-            if (!localStorage.getItem('users')) {
-                // 默认管理员账号
-                const defaultUsers = [
-                    { id: 1, username: 'admin', password: 'admin123', role: 'admin' }
-                ];
-                localStorage.setItem('users', JSON.stringify(defaultUsers));
-            }
-            if (!localStorage.getItem('projects')) {
-                localStorage.setItem('projects', JSON.stringify([]));
-            }
+        // ============================================================
+        // ⚙️  配置区：填入你的 Supabase 项目信息（见下方说明）
+        // ============================================================
+        const SUPABASE_URL = 'https://ykijfxxbhdnutqlloxuv.supabase.co';          // 例如 https://abcdefg.supabase.co
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlraWpmeHhiaGRudXRxbGxveHV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MDg3MDgsImV4cCI6MjA5NjQ4NDcwOH0.JR67KI4UfhhQLL8mekOfLNsndLsS7TZe2IH3SMPXjLQ';      // 在 Supabase → Project Settings → API 中找到
+        // ============================================================
+
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // 当前登录用户（存在内存里，不用localStorage）
+        let _currentUser = null;
+
+        // ---- 工具：显示加载状态 ----
+        function setLoading(msg) {
+            const c = document.getElementById('projectContainer');
+            if (msg) c.innerHTML = `<div style="text-align:center;padding:40px;color:#999;">${msg}</div>`;
         }
 
-        // 获取用户列表
-        function getUsers() {
-            return JSON.parse(localStorage.getItem('users')) || [];
+        // ---- 获取当前用户 ----
+        function getCurrentUser() {
+            return _currentUser;
         }
 
-        // 保存用户列表
-        function saveUsers(users) {
-            localStorage.setItem('users', JSON.stringify(users));
-        }
-
-        // 获取项目列表
-        function getProjects() {
-            return JSON.parse(localStorage.getItem('projects')) || [];
-        }
-
-        // 保存项目列表
-        function saveProjects(projects) {
-            localStorage.setItem('projects', JSON.stringify(projects));
-        }
-
+        // ============================================================
         // 登录
-        function login() {
-            const username = document.getElementById('username').value;
+        // ============================================================
+        async function login() {
+            const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
-            const users = getUsers();
-            const user = users.find(u => u.username === username && u.password === password);
-            
-            if (user) {
-                localStorage.setItem('currentUser', JSON.stringify(user));
-                document.getElementById('loginPage').style.display = 'none';
-                document.getElementById('mainPage').style.display = 'block';
-                renderProjects();
-                renderUserList();
-            } else {
+
+            if (!username || !password) return;
+
+            const { data, error } = await sb
+                .from('users')
+                .select('*')
+                .eq('username', username)
+                .eq('password', password)
+                .single();
+
+            if (error || !data) {
                 document.getElementById('loginError').classList.add('show');
+                return;
             }
+
+            _currentUser = data;
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('mainPage').style.display = 'block';
+            document.getElementById('loginError').classList.remove('show');
+            await renderProjects();
+            await renderUserList();
         }
 
+        // ============================================================
         // 退出登录
+        // ============================================================
         function logout() {
-            localStorage.removeItem('currentUser');
+            _currentUser = null;
             document.getElementById('loginPage').style.display = 'flex';
             document.getElementById('mainPage').style.display = 'none';
             document.getElementById('username').value = '';
@@ -806,295 +811,87 @@
             document.getElementById('loginError').classList.remove('show');
         }
 
-        // 切换侧边栏
+        // ============================================================
+        // 侧边栏
+        // ============================================================
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');
             sidebar.classList.toggle('open');
             overlay.classList.toggle('show');
-            
-            const currentUser = getCurrentUser();
-            if (currentUser && currentUser.role === 'admin') {
+            if (_currentUser && _currentUser.role === 'admin') {
                 document.getElementById('addUserForm').style.display = 'block';
             }
         }
 
-        // 获取当前登录用户
-        function getCurrentUser() {
-            return JSON.parse(localStorage.getItem('currentUser'));
-        }
-
-        // 渲染用户列表
-        function renderUserList() {
-            const users = getUsers();
+        // ============================================================
+        // 用户管理
+        // ============================================================
+        async function renderUserList() {
+            const { data: users } = await sb.from('users').select('*').order('id');
             const container = document.getElementById('userList');
-            const currentUser = getCurrentUser();
-            
-            container.innerHTML = '<h4>已添加用户</h4>' + users.map(user => `
+            container.innerHTML = '<h4>已添加用户</h4>' + (users || []).map(user => `
                 <div class="user-item">
                     <div class="user-info">
                         <div class="user-name">${user.username}</div>
                         <div class="user-role">${user.role === 'admin' ? '管理员' : '普通用户'}</div>
                     </div>
-                    ${user.id !== 1 && currentUser.role === 'admin' ? 
+                    ${user.username !== 'admin' && _currentUser.role === 'admin' ?
                         `<button class="delete-user-btn" onclick="deleteUser(${user.id});">删除</button>` : ''}
                 </div>
             `).join('');
         }
 
-        // 添加用户
-        function addUser() {
-            const currentUser = getCurrentUser();
-            if (currentUser.role !== 'admin') {
-                alert('只有管理员可以添加用户');
-                return;
-            }
-            
-            const username = document.getElementById('newUsername').value;
+        async function addUser() {
+            if (_currentUser.role !== 'admin') { alert('只有管理员可以添加用户'); return; }
+
+            const username = document.getElementById('newUsername').value.trim();
             const password = document.getElementById('newPassword').value;
-            const role = document.getElementById('newUserRole').value;
-            
-            if (!username || !password) {
-                alert('请填写完整信息');
-                return;
-            }
-            
-            const users = getUsers();
-            if (users.find(u => u.username === username)) {
-                alert('用户名已存在');
-                return;
-            }
-            
-            const newUser = {
-                id: Date.now(),
-                username,
-                password,
-                role
-            };
-            
-            users.push(newUser);
-            saveUsers(users);
-            renderUserList();
-            
+            const role     = document.getElementById('newUserRole').value;
+
+            if (!username || !password) { alert('请填写完整信息'); return; }
+
+            // 检查用户名是否重复
+            const { data: exist } = await sb.from('users').select('id').eq('username', username).single();
+            if (exist) { alert('用户名已存在'); return; }
+
+            const { error } = await sb.from('users').insert([{ username, password, role }]);
+            if (error) { alert('添加失败：' + error.message); return; }
+
             document.getElementById('newUsername').value = '';
             document.getElementById('newPassword').value = '';
             alert('添加成功');
+            await renderUserList();
         }
 
-        // 删除用户
-        function deleteUser(userId) {
+        async function deleteUser(userId) {
             if (!confirm('确定要删除这个用户吗？')) return;
-            
-            let users = getUsers();
-            users = users.filter(u => u.id !== userId);
-            saveUsers(users);
-            renderUserList();
+            await sb.from('users').delete().eq('id', userId);
+            await renderUserList();
         }
 
-        // 打开添加项目模态框
-        function openAddProjectModal() {
-            document.getElementById('projectModalTitle').textContent = '添加项目';
-            document.getElementById('projectForm').reset();
-            document.getElementById('editProjectId').value = '';
-            document.getElementById('dynamicTasks').innerHTML = `
-                <div class="add-task-row">
-                    <input type="text" placeholder="任务名称" class="task-name-input">
-                    <input type="date" class="task-date-input">
-                    <input type="text" placeholder="负责人" class="task-person-input">
-                </div>
-            `;
-            document.getElementById('projectModal').classList.add('show');
-        }
+        // ============================================================
+        // 项目 CRUD
+        // ============================================================
+        async function renderProjects() {
+            setLoading('加载中...');
+            const { data: projects, error } = await sb
+                .from('projects')
+                .select('*, tasks(*)')
+                .order('id', { ascending: false });
 
-        // 关闭项目模态框
-        function closeProjectModal() {
-            document.getElementById('projectModal').classList.remove('show');
-        }
-
-        // 添加动态任务字段
-        function addTaskField() {
-            const container = document.getElementById('dynamicTasks');
-            const newRow = document.createElement('div');
-            newRow.className = 'add-task-row';
-            newRow.innerHTML = `
-                <input type="text" placeholder="任务名称" class="task-name-input">
-                <input type="date" class="task-date-input">
-                <input type="text" placeholder="负责人" class="task-person-input">
-                <button class="remove-task-btn" onclick="this.parentElement.remove();">−</button>
-            `;
-            container.appendChild(newRow);
-        }
-
-        // 保存项目
-        document.getElementById('projectForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const editId = document.getElementById('editProjectId').value;
-            const name = document.getElementById('projectName').value;
-            const desc = document.getElementById('projectDesc').value;
-            const status = document.getElementById('projectStatus').value;
-            
-            // 收集任务
-            const tasks = [];
-            document.querySelectorAll('.add-task-row').forEach(row => {
-                const taskName = row.querySelector('.task-name-input').value;
-                const taskDate = row.querySelector('.task-date-input').value;
-                const taskPerson = row.querySelector('.task-person-input').value;
-                if (taskName) {
-                    tasks.push({
-                        id: Date.now() + Math.random(),
-                        name: taskName,
-                        date: taskDate,
-                        person: taskPerson,
-                        completed: false
-                    });
-                }
-            });
-            
-            const projects = getProjects();
-            
-            if (editId) {
-                // 编辑模式
-                const index = projects.findIndex(p => p.id == editId);
-                const oldTasks = projects[index].tasks;
-                projects[index] = {
-                    ...projects[index],
-                    name,
-                    desc,
-                    status,
-                    tasks: tasks.length > 0 ? tasks : oldTasks
-                };
-            } else {
-                // 新建模式
-                projects.push({
-                    id: Date.now(),
-                    name,
-                    desc,
-                    status,
-                    tasks
-                });
-            }
-            
-            saveProjects(projects);
-            renderProjects();
-            closeProjectModal();
-        });
-
-        // 编辑项目
-        function editProject(projectId) {
-            const projects = getProjects();
-            const project = projects.find(p => p.id === projectId);
-            
-            document.getElementById('projectModalTitle').textContent = '编辑项目';
-            document.getElementById('editProjectId').value = projectId;
-            document.getElementById('projectName').value = project.name;
-            document.getElementById('projectDesc').value = project.desc;
-            document.getElementById('projectStatus').value = project.status;
-            
-            if (project.tasks && project.tasks.length > 0) {
-                document.getElementById('dynamicTasks').innerHTML = project.tasks.map(task => `
-                    <div class="add-task-row">
-                        <input type="text" placeholder="任务名称" class="task-name-input" value="${task.name}">
-                        <input type="date" class="task-date-input" value="${task.date || ''}">
-                        <input type="text" placeholder="负责人" class="task-person-input" value="${task.person || ''}">
-                        <button class="remove-task-btn" onclick="this.parentElement.remove();">−</button>
-                    </div>
-                `).join('');
-            } else {
-                document.getElementById('dynamicTasks').innerHTML = `
-                    <div class="add-task-row">
-                        <input type="text" placeholder="任务名称" class="task-name-input">
-                        <input type="date" class="task-date-input">
-                        <input type="text" placeholder="负责人" class="task-person-input">
-                    </div>
-                `;
-            }
-            
-            document.getElementById('projectModal').classList.add('show');
-        }
-
-        // 删除项目
-        function deleteProject(projectId) {
-            if (!confirm('确定要删除这个项目吗？')) return;
-            
-            let projects = getProjects();
-            projects = projects.filter(p => p.id !== projectId);
-            saveProjects(projects);
-            renderProjects();
-        }
-
-        // 打开添加任务模态框
-        function openAddTaskModal(projectId) {
-            document.getElementById('currentProjectId').value = projectId;
-            document.getElementById('addTaskForm').reset();
-            document.getElementById('addTaskModal').classList.add('show');
-        }
-
-        // 关闭添加任务模态框
-        function closeAddTaskModal() {
-            document.getElementById('addTaskModal').classList.remove('show');
-        }
-
-        // 提交添加任务
-        document.getElementById('addTaskForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const projectId = parseInt(document.getElementById('currentProjectId').value);
-            const taskName = document.getElementById('newTaskName').value;
-            const taskDate = document.getElementById('newTaskDate').value;
-            const taskPerson = document.getElementById('newTaskPerson').value;
-            
-            const projects = getProjects();
-            const project = projects.find(p => p.id === projectId);
-            
-            if (!project.tasks) {
-                project.tasks = [];
-            }
-            
-            project.tasks.push({
-                id: Date.now(),
-                name: taskName,
-                date: taskDate,
-                person: taskPerson,
-                completed: false
-            });
-            
-            saveProjects(projects);
-            renderProjects();
-            closeAddTaskModal();
-        });
-
-        // 切换任务完成状态
-        function toggleTask(projectId, taskId) {
-            const projects = getProjects();
-            const project = projects.find(p => p.id === projectId);
-            const task = project.tasks.find(t => t.id === taskId);
-            task.completed = !task.completed;
-            saveProjects(projects);
-            renderProjects();
-        }
-
-        // 删除任务
-        function deleteTask(projectId, taskId) {
-            if (!confirm('确定要删除这个任务吗？')) return;
-            
-            const projects = getProjects();
-            const project = projects.find(p => p.id === projectId);
-            project.tasks = project.tasks.filter(t => t.id !== taskId);
-            saveProjects(projects);
-            renderProjects();
-        }
-
-        // 渲染项目列表
-        function renderProjects() {
-            const projects = getProjects();
             const container = document.getElementById('projectContainer');
-            
-            if (projects.length === 0) {
+
+            if (error) {
+                container.innerHTML = `<div style="text-align:center;padding:40px;color:#f00;">加载失败：${error.message}</div>`;
+                return;
+            }
+
+            if (!projects || projects.length === 0) {
                 container.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">暂无项目，点击右下角 + 添加新项目</div>';
                 return;
             }
-            
+
             container.innerHTML = projects.map(project => {
                 const tasks = project.tasks || [];
                 return `
@@ -1106,13 +903,12 @@
                             </span>
                         </div>
                         ${project.desc ? `<div class="project-desc">${project.desc}</div>` : ''}
-                        ${tasks.length > 0 ? `
                         <div class="tasks-section">
                             <h4>任务列表</h4>
                             ${tasks.map(task => `
                                 <div class="task-item ${task.completed ? 'task-completed' : ''}">
-                                    <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} 
-                                           onchange="toggleTask(${project.id}, ${task.id})">
+                                    <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}
+                                           onchange="toggleTask(${project.id}, ${task.id}, this.checked)">
                                     <div class="task-content">
                                         <div class="task-name">${task.name}</div>
                                         ${task.date ? `<div class="task-date">${task.date}</div>` : ''}
@@ -1123,12 +919,6 @@
                             `).join('')}
                             <button class="add-task-btn" onclick="openAddTaskModal(${project.id});">+ 添加新任务</button>
                         </div>
-                        ` : `
-                        <div class="tasks-section">
-                            <h4>任务列表</h4>
-                            <button class="add-task-btn" onclick="openAddTaskModal(${project.id});">+ 添加新任务</button>
-                        </div>
-                        `}
                         <div class="project-actions">
                             <button class="project-action-btn btn-edit" onclick="editProject(${project.id});">编辑</button>
                             <button class="project-action-btn btn-add-task" onclick="openAddTaskModal(${project.id});">添加任务</button>
@@ -1139,19 +929,180 @@
             }).join('');
         }
 
-        // 页面加载初始化
-        window.onload = function() {
-            initDB();
-            const currentUser = getCurrentUser();
-            if (currentUser) {
-                document.getElementById('loginPage').style.display = 'none';
-                document.getElementById('mainPage').style.display = 'block';
-                renderProjects();
-                renderUserList();
+        function openAddProjectModal() {
+            document.getElementById('projectModalTitle').textContent = '添加项目';
+            document.getElementById('projectForm').reset();
+            document.getElementById('editProjectId').value = '';
+            document.getElementById('dynamicTasks').innerHTML = `
+                <div class="add-task-row">
+                    <input type="text" placeholder="任务名称" class="task-name-input">
+                    <input type="date" class="task-date-input">
+                    <input type="text" placeholder="负责人" class="task-person-input">
+                </div>`;
+            document.getElementById('projectModal').classList.add('show');
+        }
+
+        function closeProjectModal() {
+            document.getElementById('projectModal').classList.remove('show');
+        }
+
+        function addTaskField() {
+            const container = document.getElementById('dynamicTasks');
+            const newRow = document.createElement('div');
+            newRow.className = 'add-task-row';
+            newRow.innerHTML = `
+                <input type="text" placeholder="任务名称" class="task-name-input">
+                <input type="date" class="task-date-input">
+                <input type="text" placeholder="负责人" class="task-person-input">
+                <button class="remove-task-btn" onclick="this.parentElement.remove();">−</button>`;
+            container.appendChild(newRow);
+        }
+
+        // 保存项目（新建 or 编辑）
+        document.getElementById('projectForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const editId = document.getElementById('editProjectId').value;
+            const name   = document.getElementById('projectName').value;
+            const desc   = document.getElementById('projectDesc').value;
+            const status = document.getElementById('projectStatus').value;
+
+            // 收集任务行
+            const taskRows = [];
+            document.querySelectorAll('.add-task-row').forEach(row => {
+                const taskName = row.querySelector('.task-name-input').value;
+                if (taskName) {
+                    taskRows.push({
+                        name:   taskName,
+                        date:   row.querySelector('.task-date-input').value || null,
+                        person: row.querySelector('.task-person-input').value || null,
+                        completed: false
+                    });
+                }
+            });
+
+            if (editId) {
+                // 编辑：更新项目基本信息
+                await sb.from('projects').update({ name, "desc": desc, status }).eq('id', editId);
+                // 若填写了新任务行则追加（不清空旧任务）
+                if (taskRows.length > 0) {
+                    const withProjectId = taskRows.map(t => ({ ...t, project_id: parseInt(editId) }));
+                    await sb.from('tasks').insert(withProjectId);
+                }
             } else {
-                document.getElementById('loginPage').style.display = 'flex';
-                document.getElementById('mainPage').style.display = 'none';
+                // 新建项目
+                const { data: newProject } = await sb
+                    .from('projects')
+                    .insert([{ name, "desc": desc, status }])
+                    .select()
+                    .single();
+                if (newProject && taskRows.length > 0) {
+                    const withProjectId = taskRows.map(t => ({ ...t, project_id: newProject.id }));
+                    await sb.from('tasks').insert(withProjectId);
+                }
             }
+
+            await renderProjects();
+            closeProjectModal();
+        });
+
+        // 编辑项目（回填数据）
+        async function editProject(projectId) {
+            const { data: project } = await sb
+                .from('projects')
+                .select('*, tasks(*)')
+                .eq('id', projectId)
+                .single();
+
+            document.getElementById('projectModalTitle').textContent = '编辑项目';
+            document.getElementById('editProjectId').value = project.id;
+            document.getElementById('projectName').value = project.name;
+            document.getElementById('projectDesc').value = project.desc || '';
+            document.getElementById('projectStatus').value = project.status;
+
+            const tasks = project.tasks || [];
+            document.getElementById('dynamicTasks').innerHTML = tasks.length > 0
+                ? tasks.map(task => `
+                    <div class="add-task-row">
+                        <input type="text" placeholder="任务名称" class="task-name-input" value="${task.name}">
+                        <input type="date" class="task-date-input" value="${task.date || ''}">
+                        <input type="text" placeholder="负责人" class="task-person-input" value="${task.person || ''}">
+                        <button class="remove-task-btn" onclick="this.parentElement.remove();">−</button>
+                    </div>`).join('')
+                : `<div class="add-task-row">
+                        <input type="text" placeholder="任务名称" class="task-name-input">
+                        <input type="date" class="task-date-input">
+                        <input type="text" placeholder="负责人" class="task-person-input">
+                   </div>`;
+
+            document.getElementById('projectModal').classList.add('show');
+        }
+
+        async function deleteProject(projectId) {
+            if (!confirm('确定要删除这个项目吗？')) return;
+            // tasks 表设了级联删除，删项目会自动删任务
+            await sb.from('projects').delete().eq('id', projectId);
+            await renderProjects();
+        }
+
+        // ============================================================
+        // 任务 CRUD
+        // ============================================================
+        function openAddTaskModal(projectId) {
+            document.getElementById('currentProjectId').value = projectId;
+            document.getElementById('addTaskForm').reset();
+            document.getElementById('addTaskModal').classList.add('show');
+        }
+
+        function closeAddTaskModal() {
+            document.getElementById('addTaskModal').classList.remove('show');
+        }
+
+        document.getElementById('addTaskForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const projectId = parseInt(document.getElementById('currentProjectId').value);
+            const name      = document.getElementById('newTaskName').value;
+            const date      = document.getElementById('newTaskDate').value || null;
+            const person    = document.getElementById('newTaskPerson').value || null;
+
+            await sb.from('tasks').insert([{ project_id: projectId, name, date, person, completed: false }]);
+            await renderProjects();
+            closeAddTaskModal();
+        });
+
+        async function toggleTask(projectId, taskId, checked) {
+            await sb.from('tasks').update({ completed: checked }).eq('id', taskId);
+            await renderProjects();
+        }
+
+        async function deleteTask(projectId, taskId) {
+            if (!confirm('确定要删除这个任务吗？')) return;
+            await sb.from('tasks').delete().eq('id', taskId);
+            await renderProjects();
+        }
+
+        // ============================================================
+        // 页面初始化
+        // ============================================================
+        window.onload = function() {
+            // 未配置时给出提示
+            if (SUPABASE_URL.includes('你的')) {
+                document.getElementById('loginPage').innerHTML = `
+                    <div class="login-box" style="max-width:500px;margin:auto;">
+                        <h1 style="color:#e53935;font-size:18px;">⚠️ 请先配置 Supabase</h1>
+                        <p style="margin-top:15px;line-height:1.8;color:#555;font-size:14px;">
+                            请打开 index.html 文件，找到顶部 <b>⚙️ 配置区</b>，<br>
+                            填入你的 <b>SUPABASE_URL</b> 和 <b>SUPABASE_KEY</b> 后刷新页面。<br><br>
+                            👉 去 <a href="https://supabase.com" target="_blank">supabase.com</a> 注册并创建项目，<br>
+                            在 Project Settings → API 中复制这两个值。
+                        </p>
+                    </div>`;
+                return;
+            }
+            // 正常启动：直接显示登录页
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('mainPage').style.display = 'none';
         };
     </script>
 </body>
