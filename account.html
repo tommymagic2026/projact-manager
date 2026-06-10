@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>员工账号管理</title>
+<style>
+* {margin: 0;padding: 0;box-sizing: border-box;}
+body {font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;background: #f5f5f5;min-height: 100vh;}
+.container {max-width: 800px;margin: 0 auto;padding: 15px;}
+.header {background: #2c3e50;color: white;padding: 15px;border-radius: 8px;margin-bottom: 15px;display: flex;justify-content: space-between;align-items: center;}
+.header h1 {font-size: 18px;}
+.btn {padding: 8px 16px;border: none;border-radius: 4px;cursor: pointer;font-size: 14px;transition: all 0.3s;}
+.btn-primary {background: #3498db;color: white;}
+.btn-primary:hover {background: #2980b9;}
+.btn-danger {background: #e74c3c;color: white;}
+.btn-danger:hover {background: #c0392b;}
+.btn-success {background: #27ae60;color: white;}
+.btn-success:hover {background: #219a52;}
+.btn-warning {background: #f39c12;color: white;}
+.btn-warning:hover {background: #d68910;}
+.card {background: white;border-radius: 8px;padding: 15px;margin-bottom: 15px;box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
+.form-group {margin-bottom: 15px;}
+.form-group label {display: block;margin-bottom: 5px;font-weight: 500;color: #333;}
+.form-group input,.form-group select {width: 100%;padding: 10px;border: 1px solid #ddd;border-radius: 4px;font-size: 14px;}
+.form-actions {display: flex;gap: 10px;margin-top: 15px;}
+.search-box {margin-bottom: 15px;display: flex;gap: 10px;}
+.search-box input {flex: 1;padding: 10px;border: 1px solid #ddd;border-radius: 4px;}
+table {width: 100%;border-collapse: collapse;}
+table th,table td {padding: 10px;text-align: left;border-bottom: 1px solid #eee;}
+table th {background: #f8f9fa;font-weight: 600;}
+table tr:hover {background: #f8f9fa;}
+.action-btns {display: flex;gap: 5px;flex-wrap: wrap;}
+.action-btns .btn {padding: 5px 10px;font-size: 12px;}
+.modal {display: none;position: fixed;top: 0;left: 0;width: 100%;height: 100%;background: rgba(0,0,0,0.5);z-index: 1000;justify-content: center;align-items: center;}
+.modal.show {display: flex;}
+.modal-content {background: white;border-radius: 8px;padding: 20px;width: 90%;max-width: 500px;max-height: 90vh;overflow-y: auto;}
+.modal-header {display: flex;justify-content: space-between;align-items: center;margin-bottom: 15px;}
+.modal-header h2 {font-size: 18px;}
+.close-btn {background: none;border: none;font-size: 24px;cursor: pointer;color: #999;}
+.user-info {margin-bottom: 15px;padding: 10px;background: #e8f4f8;border-radius: 4px;}
+.user-info p {margin: 5px 0;}
+@media (max-width: 600px) {
+table {font-size: 12px;}
+table th,table td {padding: 6px;}
+.action-btns .btn {padding: 4px 8px;font-size: 11px;}
+}
+</style>
+<script src="https://unpkg.com/@supabase/supabase-js"></script>
+<script src="supabase-config.js"></script>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>员工账号管理</h1>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-primary" onclick="window.location.href='index.html'">返回主页</button>
+            <button class="btn btn-primary" onclick="openModal()">添加员工</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜索员工姓名或用户名..." oninput="searchUsers()">
+            <button class="btn btn-primary" onclick="searchUsers()">搜索</button>
+        </div>
+        <div style="overflow-x: auto;">
+            <table id="userTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>用户名</th>
+                        <th>姓名</th>
+                        <th>角色</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 添加/编辑员工模态框 -->
+<div class="modal" id="userModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle">添加员工</h2>
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+        </div>
+        <form id="userForm">
+            <input type="hidden" id="userId">
+            <div class="form-group">
+                <label>用户名 *</label>
+                <input type="text" id="userUsername" required placeholder="请输入用户名">
+            </div>
+            <div class="form-group">
+                <label>姓名 *</label>
+                <input type="text" id="userName" required placeholder="请输入真实姓名">
+            </div>
+            <div class="form-group">
+                <label>初始密码 *</label>
+                <input type="password" id="userPassword" required placeholder="请输入初始密码">
+            </div>
+            <div class="form-group">
+                <label>角色</label>
+                <select id="userRole">
+                    <option value="employee">员工</option>
+                    <option value="admin">管理员</option>
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn" onclick="closeModal()">取消</button>
+                <button type="submit" class="btn btn-success">保存</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 修改密码模态框 -->
+<div class="modal" id="passwordModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>修改密码</h2>
+            <button class="close-btn" onclick="closePasswordModal()">&times;</button>
+        </div>
+        <div class="user-info" id="passwordUserInfo"></div>
+        <form id="passwordForm">
+            <input type="hidden" id="passwordUserId">
+            <div class="form-group">
+                <label>原密码</label>
+                <input type="password" id="oldPassword" required placeholder="请输入原密码">
+            </div>
+            <div class="form-group">
+                <label>新密码</label>
+                <input type="password" id="newPassword" required placeholder="请输入新密码">
+            </div>
+            <div class="form-group">
+                <label>确认新密码</label>
+                <input type="password" id="confirmPassword" required placeholder="请再次输入新密码">
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn" onclick="closePasswordModal()">取消</button>
+                <button type="submit" class="btn btn-warning">修改密码</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// ── 本地用户存取（与 index.html 保持一致）─────────────
+function getCurrentUser() {
+    var user = localStorage.getItem('currentUser');
+    return user ? JSON.parse(user) : null;
+}
+function setCurrentUser(user) {
+    localStorage.setItem('currentUser', JSON.stringify(user));
+}
+
+// ── 权限校验 ──────────────────────────────────────────
+function checkPermission() {
+    var user = getCurrentUser();
+    console.log("当前检查权限的用户对象：", user);
+    
+    if (!user) {
+        alert('无权限访问，请使用管理员账号登录！');
+        window.location.href = 'index.html';
+        return false;
+    }
+    
+    // 检查用户名是否为admin（忽略大小写）
+    var isAdminUser = user.username && user.username.toLowerCase() === 'admin';
+    // 检查角色是否为admin（忽略大小写）
+    var isAdminRole = user.role && user.role.toLowerCase() === 'admin';
+    
+    if (isAdminUser || isAdminRole) {
+        return true;
+    }
+    
+    alert('无权限访问，请使用管理员账号登录！');
+    window.location.href = 'index.html';
+    return false;
+}
+
+// ── 渲染列表 ──────────────────────────────────────────
+async function renderUserList(filter) {
+    filter = filter || '';
+    var tbody = document.getElementById('userTableBody');
+    
+    let query = _supabase.from('users').select('*').order('id', { ascending: true });
+    
+    if (filter) {
+        query = query.or(`name.ilike.%${filter}%,username.ilike.%${filter}%`);
+    }
+    
+    const { data: users, error } = await query;
+    
+    if (error) {
+        console.error('查询用户失败:', error);
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;padding:20px;">查询失败</td></tr>';
+        return;
+    }
+    
+    if (!users || users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;padding:20px;">暂无员工数据</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = users.map(function(u) {
+        return '<tr>' +
+            '<td>' + u.id + '</td>' +
+            '<td>' + u.username + '</td>' +
+            '<td>' + u.name + '</td>' +
+            '<td>' + (u.role === 'admin' ? '<span style="color:#e74c3c;font-weight:bold;">管理员</span>' : '员工') + '</td>' +
+            '<td>' + new Date(u.created_at || u.create_time).toLocaleString() + '</td>' +
+            '<td><div class="action-btns">' +
+                '<button class="btn btn-warning" onclick="editUser(' + u.id + ')">编辑</button>' +
+                '<button class="btn btn-warning" onclick="changePassword(' + u.id + ')">改密码</button>' +
+                '<button class="btn btn-danger" onclick="deleteUser(' + u.id + ')">删除</button>' +
+            '</div></td>' +
+        '</tr>';
+    }).join('');
+}
+
+async function searchUsers() {
+    await renderUserList(document.getElementById('searchInput').value.trim());
+}
+
+// ── 添加/编辑模态框 ───────────────────────────────────
+function openModal() {
+    document.getElementById('modalTitle').textContent = '添加员工';
+    document.getElementById('userId').value = '';
+    document.getElementById('userUsername').value = '';
+    document.getElementById('userName').value = '';
+    document.getElementById('userPassword').value = '';
+    document.getElementById('userPassword').required = true;
+    document.getElementById('userRole').value = 'employee';
+    document.getElementById('userModal').classList.add('show');
+}
+function closeModal() {
+    document.getElementById('userModal').classList.remove('show');
+}
+
+async function editUser(id) {
+    const { data: user, error } = await _supabase
+        .from('users')
+        .select('*')
+        .eq('id', id)
+        .single();
+    
+    if (error || !user) return;
+    document.getElementById('modalTitle').textContent = '编辑员工';
+    document.getElementById('userId').value = user.id;
+    document.getElementById('userUsername').value = user.username;
+    document.getElementById('userName').value = user.name;
+    document.getElementById('userRole').value = user.role;
+    document.getElementById('userPassword').value = '';
+    document.getElementById('userPassword').required = false;
+    document.getElementById('userModal').classList.add('show');
+}
+
+// ── 修改密码模态框 ────────────────────────────────────
+async function changePassword(id) {
+    const { data: user, error } = await _supabase
+        .from('users')
+        .select('username, name')
+        .eq('id', id)
+        .single();
+    
+    if (error || !user) return;
+    document.getElementById('passwordUserId').value = id;
+    document.getElementById('passwordUserInfo').innerHTML =
+        '<p><strong>用户名：</strong>' + user.username + '</p>' +
+        '<p><strong>姓名：</strong>' + user.name + '</p>';
+    document.getElementById('passwordForm').reset();
+    document.getElementById('passwordUserId').value = id;
+    document.getElementById('passwordModal').classList.add('show');
+}
+function closePasswordModal() {
+    document.getElementById('passwordModal').classList.remove('show');
+    document.getElementById('passwordForm').reset();
+}
+
+// ── 删除用户 ──────────────────────────────────────────
+async function deleteUser(id) {
+    // 先查询用户信息
+    const { data: user, error } = await _supabase
+        .from('users')
+        .select('name')
+        .eq('id', id)
+        .single();
+    
+    if (error || !user) {
+        alert('用户不存在！');
+        return;
+    }
+    
+    if (!confirm('确定要删除员工 "' + user.name + '" 吗？此操作不可撤销！')) return;
+    
+    var currentUser = getCurrentUser();
+    if (currentUser && currentUser.id === id) {
+        alert('不能删除当前登录的账号！');
+        return;
+    }
+    
+    const { error: deleteError } = await _supabase
+        .from('users')
+        .delete()
+        .eq('id', id);
+    
+    if (deleteError) {
+        console.error('删除失败:', deleteError);
+        alert('删除失败：' + deleteError.message);
+        return;
+    }
+    
+    await renderUserList(document.getElementById('searchInput').value.trim());
+    alert('删除成功！');
+}
+
+// ── 表单提交：添加/编辑 ───────────────────────────────
+document.getElementById('userForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    var userId   = document.getElementById('userId').value;
+    var username = document.getElementById('userUsername').value.trim();
+    var name     = document.getElementById('userName').value.trim();
+    var password = document.getElementById('userPassword').value;
+    var role     = document.getElementById('userRole').value;
+
+    // 检查用户名是否已存在
+    let query = _supabase.from('users').select('id').eq('username', username);
+    if (userId) {
+        query = query.neq('id', parseInt(userId));
+    }
+    const { data: existUser } = await query;
+    
+    if (existUser && existUser.length > 0) {
+        alert('用户名已存在，请使用其他用户名！');
+        return;
+    }
+
+    const userData = {
+        username: username,
+        name: name,
+        role: role
+    };
+    
+    if (password) {
+        userData.password = password;
+    }
+
+    if (userId) {
+        // 更新现有用户
+        const { error } = await _supabase
+            .from('users')
+            .update(userData)
+            .eq('id', parseInt(userId));
+        
+        if (error) {
+            console.error('更新失败:', error);
+            alert('修改失败：' + error.message);
+            return;
+        }
+        
+        alert('修改成功！');
+    } else {
+        // 添加新用户
+        if (!password) { alert('请输入初始密码！'); return; }
+        
+        userData.password = password;
+        userData.created_at = new Date().toISOString();
+        
+        const { error } = await _supabase
+            .from('users')
+            .insert([userData]);
+        
+        if (error) {
+            console.error('添加失败:', error);
+            alert('添加失败：' + error.message);
+            return;
+        }
+        
+        alert('添加成功！');
+    }
+    
+    closeModal();
+    await renderUserList(document.getElementById('searchInput').value.trim());
+});
+
+// ── 表单提交：修改密码 ────────────────────────────────
+document.getElementById('passwordForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    var userId      = parseInt(document.getElementById('passwordUserId').value);
+    var oldPassword = document.getElementById('oldPassword').value;
+    var newPassword = document.getElementById('newPassword').value;
+    var confirmPwd  = document.getElementById('confirmPassword').value;
+    
+    // 查询用户信息
+    const { data: user, error } = await _supabase
+        .from('users')
+        .select('password')
+        .eq('id', userId)
+        .single();
+    
+    if (error || !user) {
+        alert('用户不存在！');
+        return;
+    }
+
+    if (user.password !== oldPassword) { alert('原密码错误！'); return; }
+    if (newPassword !== confirmPwd)    { alert('两次输入的新密码不一致！'); return; }
+    if (newPassword.length < 4)        { alert('新密码长度至少4位！'); return; }
+    if (oldPassword === newPassword)   { alert('新密码不能与原密码相同！'); return; }
+
+    // 更新密码
+    const { error: updateError } = await _supabase
+        .from('users')
+        .update({ password: newPassword })
+        .eq('id', userId);
+    
+    if (updateError) {
+        console.error('修改密码失败:', updateError);
+        alert('修改失败：' + updateError.message);
+        return;
+    }
+
+    alert('密码修改成功！');
+    closePasswordModal();
+    await renderUserList(document.getElementById('searchInput').value.trim());
+});
+
+// ── 页面初始化 ────────────────────────────────────────
+window.onload = async function() {
+    if (!await checkPermission()) return;
+    await renderUserList();
+};
+</script>
+</body>
+</html>

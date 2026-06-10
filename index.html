@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>执元料理管理系统</title>
+<style>
+* {margin: 0;padding: 0;box-sizing: border-box;}
+body {font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;background: #f5f5f5;min-height: 100vh;}
+/* 登录页 */
+.login-container {display: flex;align-items: center;justify-content: center;min-height: 100vh;padding: 15px;}
+.login-box {background: white;padding: 30px 20px;border-radius: 12px;box-shadow: 0 4px 12px rgba(0,0,0,0.1);width: 100%;max-width: 400px;}
+.login-box h1 {text-align: center;margin-bottom: 20px;color: #2c3e50;font-size: 24px;}
+.form-group {margin-bottom: 15px;}
+.form-group label {display: block;margin-bottom: 5px;font-weight: 500;color: #333;}
+.form-group input {width: 100%;padding: 12px;border: 1px solid #ddd;border-radius: 6px;font-size: 16px;}
+.btn {padding: 12px 20px;border: none;border-radius: 6px;cursor: pointer;font-size: 16px;transition: all 0.3s;width: 100%;}
+.btn-primary {background: #3498db;color: white;}
+.btn-primary:hover {background: #2980b9;}
+.login-error {display: none;background: #fee;color: #c0392b;padding: 10px;border-radius: 4px;margin-top: 10px;font-size: 14px;}
+.login-error.show {display: block;}
+/* 主页 */
+.main-container {display: none;min-height: 100vh;}
+.header {background: #2c3e50;color: white;padding: 15px;}
+.header h1 {font-size: 20px;text-align: center;}
+.user-info {text-align: center;font-size: 14px;margin-top: 8px;opacity: 0.9;}
+.container {max-width: 800px;margin: 0 auto;padding: 15px;}
+.module-grid {display: grid;grid-template-columns: 1fr 1fr;gap: 15px;margin-top: 15px;}
+.module-card {background: white;padding: 25px 15px;border-radius: 10px;box-shadow: 0 2px 6px rgba(0,0,0,0.1);text-align: center;cursor: pointer;transition: all 0.3s;border: 2px solid transparent;}
+.module-card:hover {transform: translateY(-3px);box-shadow: 0 6px 16px rgba(0,0,0,0.15);border-color: #3498db;}
+.module-card.disabled {opacity: 0.5;cursor: not-allowed;}
+.module-icon {font-size: 40px;margin-bottom: 10px;}
+.module-title {font-size: 16px;font-weight: 600;color: #2c3e50;margin-bottom: 5px;}
+.module-desc {font-size: 12px;color: #999;}
+.logout-btn {position: fixed;bottom: 20px;left: 50%;transform: translateX(-50%);width: calc(100% - 30px);max-width: 770px;padding: 12px;background: #e74c3c;color: white;border: none;border-radius: 8px;font-size: 16px;cursor: pointer;}
+@media (max-width: 600px) {
+.module-grid {grid-template-columns: 1fr;}
+}
+</style>
+</head>
+<body>
+    <script src="https://unpkg.com/@supabase/supabase-js"></script>
+    <script src="supabase-config.js"></script>
+<!-- 登录页面 -->
+<div class="login-container" id="loginPage">
+    <div class="login-box">
+        <h1>执元料理管理系统</h1>
+        <!-- 【修复】移除 onsubmit，改用 addEventListener 绑定，避免内联 event 兼容性问题 -->
+        <form id="loginForm">
+            <div class="form-group">
+                <label>用户名</label>
+                <input type="text" id="username" placeholder="请输入用户名" required>
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" id="password" placeholder="请输入密码" required>
+            </div>
+            <button type="submit" class="btn btn-primary">登录</button>
+            <div class="login-error" id="loginError">用户名或密码错误，请重试！</div>
+        </form>
+    </div>
+</div>
+
+<!-- 主页面 -->
+<div class="main-container" id="mainPage">
+    <div class="header">
+        <h1>执元料理管理系统</h1>
+        <div class="user-info" id="userInfo"></div>
+    </div>
+    <div class="container">
+        <div class="module-grid">
+            <div class="module-card" onclick="goTo('attendance.html')">
+                <div class="module-icon">📋</div>
+                <div class="module-title">考勤打卡</div>
+                <div class="module-desc">每日考勤登记</div>
+            </div>
+            <div class="module-card" onclick="goTo('report.html')">
+                <div class="module-icon">📊</div>
+                <div class="module-title">考勤报表</div>
+                <div class="module-desc">导出PDF报表</div>
+            </div>
+            <div class="module-card" onclick="goTo('store.html')">
+                <div class="module-icon">📦</div>
+                <div class="module-title">原材料采购</div>
+                <div class="module-desc">今日采购下单</div>
+            </div>
+            <div class="module-card" id="reportCard" onclick="goTo('store_report.html')">
+                <div class="module-icon">📈</div>
+                <div class="module-title">采购报表</div>
+                <div class="module-desc">订单查看与确认</div>
+            </div>
+            <div class="module-card" id="accountCard" onclick="goTo('account.html')">
+                <div class="module-icon">👥</div>
+                <div class="module-title">账号管理</div>
+                <div class="module-desc">员工账号增删改</div>
+            </div>
+            <div class="module-card" onclick="changePassword();">
+                <div class="module-icon">🔐</div>
+                <div class="module-title">修改密码</div>
+                <div class="module-desc">修改个人密码</div>
+            </div>
+        </div>
+    </div>
+    <button class="logout-btn" onclick="logout();">退出登录</button>
+</div>
+
+<!-- 修改密码模态框 -->
+<div class="modal" id="passwordModal" style="display: none;position: fixed;top: 0;left: 0;width: 100%;height: 100%;background: rgba(0,0,0,0.5);z-index: 1000;justify-content: center;align-items: center;">
+    <div class="modal-content" style="background: white;padding: 25px;border-radius: 10px;width: 90%;max-width: 400px;">
+        <h3 style="margin-bottom: 20px;text-align: center;color: #2c3e50;">修改个人密码</h3>
+        <!-- 【修复】移除 onsubmit，改用 addEventListener 绑定 -->
+        <form id="myPasswordForm">
+            <div class="form-group">
+                <label>原密码</label>
+                <input type="password" id="myOldPassword" required placeholder="请输入原密码">
+            </div>
+            <div class="form-group">
+                <label>新密码</label>
+                <input type="password" id="myNewPassword" required placeholder="请输入新密码">
+            </div>
+            <div class="form-group">
+                <label>确认新密码</label>
+                <input type="password" id="myConfirmPassword" required placeholder="请再次输入新密码">
+            </div>
+            <div style="display: flex;gap: 10px;margin-top: 20px;">
+                <button type="button" class="btn" style="background: #95a5a6;color: white;" onclick="closeChangePassword();">取消</button>
+                <button type="submit" class="btn btn-primary">确认修改</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// ── 数据存取 ──────────────────────────────────────────
+function getUsers() {
+    var users = localStorage.getItem('attendance_users');
+    return users ? JSON.parse(users) : [];
+}
+function saveUsers(users) {
+    localStorage.setItem('attendance_users', JSON.stringify(users));
+}
+function getCurrentUser() {
+    var user = localStorage.getItem('currentUser');
+    return user ? JSON.parse(user) : null;
+}
+function setCurrentUser(user) {
+    localStorage.setItem('currentUser', JSON.stringify(user));
+}
+
+// ── 登录 ──────────────────────────────────────────────
+async function login(e) {
+    if (e) e.preventDefault();
+    var username = document.getElementById('username').value.trim();
+    var password = document.getElementById('password').value;
+
+    // 从云端精确查找用户
+    const { data: users, error } = await _supabase
+        .from('users')
+        .select('*')
+        .eq('username', username)
+        .limit(1);
+
+    if (error) {
+        console.error("数据库返回的详细错误：", error);
+    }
+
+    if (error || !users || users.length === 0) {
+        document.getElementById('loginError').textContent = '用户不存在';
+        document.getElementById('loginError').classList.add('show');
+        return;
+    }
+
+    var user = users[0];
+    
+    // 检查账号状态
+    if (user.status === 'disabled') {
+        document.getElementById('loginError').textContent = '该账号已被禁用';
+        document.getElementById('loginError').classList.add('show');
+        return;
+    }
+    
+    // 校验密码
+    if (user.password !== password) {
+        document.getElementById('loginError').textContent = '密码错误';
+        document.getElementById('loginError').classList.add('show');
+        return;
+    }
+
+    document.getElementById('loginError').classList.remove('show');
+    setCurrentUser(user);
+    showMainPage();
+}
+
+// ── 主页 ──────────────────────────────────────────────
+function showMainPage() {
+    var user = getCurrentUser();
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('mainPage').style.display = 'block';
+    document.getElementById('userInfo').textContent =
+        '当前用户：' + user.name + ' (' + (user.role === 'admin' ? '管理员' : '员工') + ')';
+
+    var accountCard = document.getElementById('accountCard');
+    if (user.role !== 'admin') {
+        accountCard.classList.add('disabled');
+        accountCard.onclick = function() { alert('只有管理员才能访问账号管理！'); };
+    } else {
+        accountCard.classList.remove('disabled');
+        accountCard.onclick = function() { goTo('account.html'); };
+    }
+}
+
+function goTo(url) { window.location.href = url; }
+
+function logout() {
+    localStorage.removeItem('currentUser');
+    document.getElementById('loginPage').style.display = 'flex';
+    document.getElementById('mainPage').style.display = 'none';
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+    document.getElementById('loginError').classList.remove('show');
+}
+
+// ── 修改密码 ──────────────────────────────────────────
+function changePassword() {
+    document.getElementById('passwordModal').style.display = 'flex';
+    document.getElementById('myPasswordForm').reset();
+}
+function closeChangePassword() {
+    document.getElementById('passwordModal').style.display = 'none';
+}
+
+// ── 修改密码 ──────────────────────────────────────────
+async function doChangePassword() {
+    var currentUser = getCurrentUser();
+    if (!currentUser) { alert('请先登录！'); return; }
+
+    var oldPassword     = document.getElementById('myOldPassword').value;
+    var newPassword     = document.getElementById('myNewPassword').value;
+    var confirmPassword = document.getElementById('myConfirmPassword').value;
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+        alert('请填写完整的密码信息！'); return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        alert('两次输入的新密码不一致！'); return;
+    }
+    if (newPassword.length < 4) {
+        alert('新密码长度至少4位！'); return;
+    }
+    if (oldPassword === newPassword) {
+        alert('新密码不能与原密码相同！'); return;
+    }
+
+    // 从云端获取最新用户信息校验原密码
+    const { data: users, error: fetchError } = await _supabase
+        .from('users')
+        .select('*')
+        .eq('id', currentUser.id)
+        .limit(1);
+
+    if (fetchError || !users || users.length === 0) {
+        alert('用户不存在，请重新登录！');
+        logout();
+        return;
+    }
+
+    var user = users[0];
+    if (user.password !== oldPassword) {
+        alert('原密码错误！');
+        return;
+    }
+
+    // 更新云端密码
+    const { error: updateError } = await _supabase
+        .from('users')
+        .update({ password: newPassword })
+        .eq('id', currentUser.id);
+
+    if (updateError) {
+        alert('密码修改失败：' + updateError.message);
+        return;
+    }
+
+    // 同步更新本地缓存
+    currentUser.password = newPassword;
+    setCurrentUser(currentUser);
+
+    alert('密码修改成功！请重新登录。');
+    closeChangePassword();
+    logout();
+}
+
+// ── 【核心修复】DOMContentLoaded 里用 addEventListener 绑定表单 ──
+// 彻底替代内联 onsubmit，解决 event 变量在部分浏览器/WebView 下为 undefined 的问题
+document.addEventListener('DOMContentLoaded', function() {
+    // 登录表单
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        login();
+    });
+
+    // 修改密码表单
+    document.getElementById('myPasswordForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        doChangePassword();
+    });
+
+    // 检查是否已登录
+    var user = getCurrentUser();
+    if (user) {
+        showMainPage();
+    } else {
+        document.getElementById('loginPage').style.display = 'flex';
+        document.getElementById('mainPage').style.display = 'none';
+    }
+});
+</script>
+</body>
+</html>

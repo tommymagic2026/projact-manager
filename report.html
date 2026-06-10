@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>考勤输出报表</title>
+<style>
+* {margin: 0;padding: 0;box-sizing: border-box;}
+body {font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;background: #f5f5f5;min-height: 100vh;}
+.container {max-width: 900px;margin: 0 auto;padding: 15px;}
+.header {background: #2c3e50;color: white;padding: 15px;border-radius: 8px;margin-bottom: 15px;display: flex;justify-content: space-between;align-items: center;}
+.header h1 {font-size: 18px;}
+.btn {padding: 8px 16px;border: none;border-radius: 4px;cursor: pointer;font-size: 14px;transition: all 0.3s;}
+.btn-primary {background: #3498db;color: white;}
+.btn-primary:hover {background: #2980b9;}
+.btn-success {background: #27ae60;color: white;}
+.btn-success:hover {background: #219a52;}
+.btn-danger {background: #e74c3c;color: white;}
+.btn-danger:hover {background: #c0392b;}
+.btn-info {background: #17a2b8;color: white;}
+.btn-info:hover {background: #138496;}
+.card {background: white;border-radius: 8px;padding: 15px;margin-bottom: 15px;box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
+.card h3 {margin-bottom: 15px;color: #333;font-size: 16px;border-bottom: 1px solid #eee;padding-bottom: 10px;}
+.form-group {margin-bottom: 15px;}
+.form-group label {display: block;margin-bottom: 5px;font-weight: 500;color: #333;}
+.form-group select,.form-group input {width: 100%;padding: 10px;border: 1px solid #ddd;border-radius: 4px;font-size: 14px;}
+.search-form {display: flex;gap: 10px;align-items: end;flex-wrap: wrap;}
+.search-form .form-group {flex: 1;min-width: 200px;margin-bottom: 0;}
+.table {width: 100%;border-collapse: collapse;}
+.table th,.table td {padding: 10px;text-align: left;border-bottom: 1px solid #eee;}
+.table th {background: #f8f9fa;font-weight: 600;}
+.table tr:hover {background: #f8f9fa;}
+.empty-tip {text-align: center;color: #999;padding: 30px;}
+.report-list {margin-top: 15px;}
+.report-item {padding: 15px;border: 1px solid #ddd;border-radius: 6px;margin-bottom: 10px;display: flex;justify-content: space-between;align-items: center;}
+.report-info h4 {margin-bottom: 5px;color: #333;}
+.report-info p {font-size: 13px;color: #666;}
+.report-actions {display: flex;gap: 8px;}
+.summary-box {background: #e8f4f8;padding: 15px;border-radius: 6px;margin-bottom: 15px;}
+.summary-box h4 {margin-bottom: 10px;color: #2c3e50;}
+.summary-item {display: flex;justify-content: space-between;padding: 8px 0;border-bottom: 1px solid #d4e6f1;}
+.summary-item:last-child {border-bottom: none;font-weight: bold;}
+.summary-item span:first-child {color: #666;}
+.summary-item span:last-child {color: #2c3e50;}
+
+/* 生成中遮罩 */
+.loading-mask {display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;justify-content:center;align-items:center;flex-direction:column;gap:16px;}
+.loading-mask.show {display:flex;}
+.loading-spinner {width:48px;height:48px;border:5px solid #fff;border-top-color:#3498db;border-radius:50%;animation:spin 0.8s linear infinite;}
+.loading-text {color:#fff;font-size:16px;}
+@keyframes spin {to{transform:rotate(360deg);}}
+
+/* 报表渲染区域（屏幕外渲染用） */
+#reportCanvas {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 750px;
+  background: white;
+  padding: 40px 36px;
+  font-family: 'PingFang SC', 'Microsoft YaHei', '微软雅黑', SimSun, sans-serif;
+  font-size: 14px;
+  color: #222;
+}
+.rc-title {font-size: 22px;font-weight: bold;text-align: center;margin-bottom: 18px;color: #1a1a1a;}
+.rc-meta {font-size: 13px;color: #444;margin-bottom: 5px;}
+.rc-section {font-size: 15px;font-weight: bold;margin: 20px 0 10px;padding-left: 10px;border-left: 4px solid #2c3e50;color: #2c3e50;}
+.rc-summary {border: 1px solid #ccc;border-radius: 4px;padding: 10px 16px;margin-bottom: 16px;}
+.rc-summary-row {display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:13px;}
+.rc-summary-row:last-child {border-bottom:none;font-weight:bold;}
+.rc-table {width:100%;border-collapse:collapse;font-size:13px;}
+.rc-table th {background:#2c3e50;color:#fff;padding:9px 10px;text-align:center;}
+.rc-table td {padding:8px 10px;text-align:center;border-bottom:1px solid #ddd;}
+.rc-table tr.total-row td {font-weight:bold;background:#f0f4f8;}
+.rc-footer {margin-top:28px;font-size:12px;color:#aaa;text-align:right;}
+
+@media (max-width: 600px) {
+.table {font-size: 12px;}
+.table th,.table td {padding: 6px;}
+.search-form .form-group {min-width: 100%;}
+.report-item {flex-direction: column;align-items: flex-start;gap: 10px;}
+.report-actions {width: 100%;justify-content: flex-end;}
+}
+</style>
+</head>
+<body>
+
+<!-- 生成中遮罩 -->
+<div class="loading-mask" id="loadingMask">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">正在生成PDF，请稍候...</div>
+</div>
+
+<!-- 屏幕外报表渲染区（html2canvas 截图用） -->
+<div id="reportCanvas"></div>
+
+<!-- 正常页面内容 -->
+<div class="container">
+    <div class="header">
+        <h1>考勤输出报表</h1>
+        <button class="btn btn-primary" onclick="window.location.href='index.html'">返回主页</button>
+    </div>
+
+    <div class="card">
+        <h3>查询月度考勤统计</h3>
+        <div class="search-form">
+            <div class="form-group">
+                <label>选择月份</label>
+                <input type="month" id="reportMonth" required />
+            </div>
+            <div class="form-group">
+                <label>&nbsp;</label>
+                <button type="button" class="btn btn-primary" onclick="queryReport()">查询统计</button>
+            </div>
+            <div class="form-group" id="generateBtnGroup">
+                <label>&nbsp;</label>
+                <button type="button" class="btn btn-success" onclick="generateReport()">生成PDF报表</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" id="previewCard" style="display:none;">
+        <h3>报表统计预览</h3>
+        <div id="summaryBox" class="summary-box"></div>
+        <div style="overflow-x:auto;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>员工姓名</th><th>应出勤天数</th><th>实际出勤</th><th>休息天数</th><th>出勤率</th>
+                    </tr>
+                </thead>
+                <tbody id="previewBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>已生成报表管理</h3>
+        <div id="reportList" class="report-list"></div>
+    </div>
+</div>
+
+<!-- Supabase SDK -->
+<script src="https://unpkg.com/@supabase/supabase-js"></script>
+<script src="supabase-config.js"></script>
+
+<!-- html2canvas + jsPDF（支持微信/手机） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+// ── 数据存取 ──────────────────────────────────────────
+function getCurrentUser() {
+    var u = localStorage.getItem('currentUser');
+    return u ? JSON.parse(u) : null;
+}
+function checkLogin() {
+    if (!getCurrentUser()) {
+        alert('请先登录！');
+        window.location.href = 'index.html';
+        return false;
+    }
+    return true;
+}
+function getUsers() {
+    var u = localStorage.getItem('attendance_users');
+    return u ? JSON.parse(u) : [];
+}
+function getAttendanceRecords() {
+    var r = localStorage.getItem('attendance_records');
+    return r ? JSON.parse(r) : [];
+}
+function getReports() {
+    var r = localStorage.getItem('attendance_reports');
+    return r ? JSON.parse(r) : [];
+}
+function saveReports(reports) {
+    var sixMonthsAgo = Date.now() - 180 * 24 * 60 * 60 * 1000;
+    var filtered = reports.filter(function(r) { return r.createTime >= sixMonthsAgo; });
+    localStorage.setItem('attendance_reports', JSON.stringify(filtered));
+}
+function getCurrentMonth() {
+    var now = new Date();
+    return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+}
+function getDaysInMonth(year, month) {
+    return new Date(year, month, 0).getDate();
+}
+
+// ── 从Supabase异步获取数据 ──────────────────────────────────────────
+async function fetchUsersAndRecords(month) {
+    // 异步获取所有员工
+    var usersRes = await _supabase.from('users').select('*');
+    var users = usersRes.data || [];
+    
+    // 异步获取该月所有考勤
+    var recordsRes = await _supabase.from('attendance').select('*').eq('month', month);
+    var records = recordsRes.data || [];
+    
+    return { users, records };
+}
+
+// ── 统计计算 ──────────────────────────────────────────
+function calculateStatistics(users, records, month) {
+    var parts = month.split('-');
+    var year = parseInt(parts[0]);
+    var monthNum = parseInt(parts[1]);
+    var totalDaysInMonth = getDaysInMonth(year, monthNum);
+    var currentUser = getCurrentUser();
+
+    var dailyMap = {};
+    records.forEach(function(record) {
+        var key = record.user_id + '-' + record.date;
+        if (!dailyMap[key] || (record.created_at && record.created_at > dailyMap[key].created_at)) {
+            dailyMap[key] = record;
+        }
+    });
+
+    var stats = {};
+    users.forEach(function(user) {
+        if (currentUser && currentUser.role !== 'admin' && user.role === 'admin') return;
+        var onDays = 0, offDays = 0;
+        Object.values(dailyMap).forEach(function(record) {
+            if (record.user_id === user.id) {
+                if (record.status === 'off') offDays++;
+                else onDays++;
+            }
+        });
+        stats[user.id] = {
+            userId: user.id,
+            userName: user.name,
+            totalDays: totalDaysInMonth,
+            onDays: onDays,
+            offDays: offDays
+        };
+    });
+    return Object.values(stats);
+}
+
+// ── 查询预览 ──────────────────────────────────────────
+async function queryReport() {
+    var month = document.getElementById('reportMonth').value || getCurrentMonth();
+    if (!month) { alert('请选择月份！'); return; }
+    var data = await fetchUsersAndRecords(month);
+    var stats = calculateStatistics(data.users, data.records, month);
+    var hasData = stats.some(function(s) { return s.onDays + s.offDays > 0; });
+    if (!hasData) { alert('该月份暂无考勤数据！'); return; }
+    renderPreview(stats, month);
+}
+
+function renderPreview(stats, month) {
+    document.getElementById('previewCard').style.display = 'block';
+    var totalUsers    = stats.length;
+    var totalWorkDays = stats.reduce(function(s, x) { return s + x.totalDays; }, 0);
+    var totalOnDays   = stats.reduce(function(s, x) { return s + x.onDays; }, 0);
+    var totalOffDays  = stats.reduce(function(s, x) { return s + x.offDays; }, 0);
+    var overallRate   = totalWorkDays > 0 ? ((totalOnDays / totalWorkDays) * 100).toFixed(2) : '0.00';
+
+    document.getElementById('summaryBox').innerHTML =
+        '<h4>报表月份：' + month + '</h4>' +
+        '<div class="summary-item"><span>员工总数</span><span>' + totalUsers + ' 人</span></div>' +
+        '<div class="summary-item"><span>总应出勤天数</span><span>' + totalWorkDays + ' 天</span></div>' +
+        '<div class="summary-item"><span>实际出勤天数</span><span>' + totalOnDays + ' 天</span></div>' +
+        '<div class="summary-item"><span>休息天数</span><span>' + totalOffDays + ' 天</span></div>' +
+        '<div class="summary-item"><span>整体出勤率</span><span>' + overallRate + '%</span></div>';
+
+    document.getElementById('previewBody').innerHTML = stats.map(function(s) {
+        var rate = s.totalDays > 0 ? ((s.onDays / s.totalDays) * 100).toFixed(2) : '0.00';
+        return '<tr><td>' + s.userName + '</td><td>' + s.totalDays + '</td><td>' + s.onDays + '</td><td>' + s.offDays + '</td><td>' + rate + '%</td></tr>';
+    }).join('');
+}
+
+// ── 生成PDF（html2canvas截图 → jsPDF，兼容微信/手机） ──
+async function generateReport() {
+    var month = document.getElementById('reportMonth').value || getCurrentMonth();
+    if (!month) { alert('请先选择月份！'); return; }
+    var currentUser = getCurrentUser();
+    var data = await fetchUsersAndRecords(month);
+    var stats = calculateStatistics(data.users, data.records, month);
+    var hasData = stats.some(function(s) { return s.onDays + s.offDays > 0; });
+    if (!hasData) { alert('该月份暂无考勤数据，无法生成报表！'); return; }
+
+    renderPreview(stats, month);
+
+    var totalUsers    = stats.length;
+    var totalWorkDays = stats.reduce(function(s, x) { return s + x.totalDays; }, 0);
+    var totalOnDays   = stats.reduce(function(s, x) { return s + x.onDays; }, 0);
+    var totalOffDays  = stats.reduce(function(s, x) { return s + x.offDays; }, 0);
+    var overallRate   = totalWorkDays > 0 ? ((totalOnDays / totalWorkDays) * 100).toFixed(2) : '0.00';
+    var now           = new Date().toLocaleString('zh-CN');
+    var creator       = currentUser.name;
+
+    // 填充屏幕外报表 DOM
+    var tableRows = stats.map(function(s) {
+        var rate = s.totalDays > 0 ? ((s.onDays / s.totalDays) * 100).toFixed(2) : '0.00';
+        return '<tr><td>' + s.userName + '</td><td>' + s.totalDays + '</td><td>' + s.onDays + '</td><td>' + s.offDays + '</td><td>' + rate + '%</td></tr>';
+    }).join('');
+    tableRows += '<tr class="total-row"><td>汇总</td><td>' + totalWorkDays + '</td><td>' + totalOnDays + '</td><td>' + totalOffDays + '</td><td>' + overallRate + '%</td></tr>';
+
+    document.getElementById('reportCanvas').innerHTML =
+        '<div class="rc-title">月度考勤报表</div>' +
+        '<div class="rc-meta">报表月份：' + month + '</div>' +
+        '<div class="rc-meta">生成时间：' + now + '</div>' +
+        '<div class="rc-meta">生成人：' + creator + '</div>' +
+        '<div class="rc-section">汇总统计</div>' +
+        '<div class="rc-summary">' +
+            '<div class="rc-summary-row"><span>员工总数</span><span>' + totalUsers + ' 人</span></div>' +
+            '<div class="rc-summary-row"><span>总应出勤天数</span><span>' + totalWorkDays + ' 天</span></div>' +
+            '<div class="rc-summary-row"><span>实际出勤天数</span><span>' + totalOnDays + ' 天</span></div>' +
+            '<div class="rc-summary-row"><span>休息天数</span><span>' + totalOffDays + ' 天</span></div>' +
+            '<div class="rc-summary-row"><span>整体出勤率</span><span>' + overallRate + '%</span></div>' +
+        '</div>' +
+        '<div class="rc-section">员工明细</div>' +
+        '<table class="rc-table"><thead><tr><th>员工姓名</th><th>应出勤天数</th><th>实际出勤</th><th>休息天数</th><th>出勤率(%)</th></tr></thead>' +
+        '<tbody>' + tableRows + '</tbody></table>' +
+        '<div class="rc-footer">本报表由执元考勤管理系统自动生成　' + now + '</div>';
+
+    // 显示生成中遮罩
+    document.getElementById('loadingMask').classList.add('show');
+
+    // 等 DOM 渲染完成后截图
+    setTimeout(function() {
+        var target = document.getElementById('reportCanvas');
+        html2canvas(target, {
+            scale: 2,           // 2倍分辨率，清晰度更好
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            width: 750,
+            windowWidth: 750
+        }).then(function(canvas) {
+            var imgData   = canvas.toDataURL('image/jpeg', 0.95);
+            var pdf       = new jspdf.jsPDF('p', 'mm', 'a4');
+            var pageW     = 210;  // A4宽 mm
+            var pageH     = 297;  // A4高 mm
+            var margin    = 10;
+            var contentW  = pageW - margin * 2;
+            var imgW      = canvas.width;
+            var imgH      = canvas.height;
+            var ratio     = contentW / (imgW / 2 * 0.2645); // px→mm
+            var drawH     = (imgH / 2) * 0.2645;            // 实际内容高度 mm
+            var usableH   = pageH - margin * 2;
+
+            // 分页处理
+            var offsetY = 0;
+            while (offsetY < drawH) {
+                if (offsetY > 0) pdf.addPage();
+                pdf.addImage(imgData, 'JPEG', margin, margin, contentW, drawH, '', 'FAST', 0);
+                // 用 clip 模拟分页（每页只显示一段）
+                offsetY += usableH;
+            }
+
+            // 重新生成，带正确分页
+            pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+            var sliceH = Math.floor((usableH / drawH) * imgH);  // 每页对应的像素高度
+            var sliceY = 0;
+            var page   = 0;
+
+            while (sliceY < imgH) {
+                if (page > 0) pdf.addPage();
+                var sliceCanvas  = document.createElement('canvas');
+                sliceCanvas.width  = imgW;
+                sliceCanvas.height = Math.min(sliceH, imgH - sliceY);
+                var ctx = sliceCanvas.getContext('2d');
+                ctx.drawImage(canvas, 0, sliceY, imgW, sliceCanvas.height, 0, 0, imgW, sliceCanvas.height);
+                var sliceData = sliceCanvas.toDataURL('image/jpeg', 0.95);
+                var sliceDrawH = (sliceCanvas.height / imgH) * drawH;
+                pdf.addImage(sliceData, 'JPEG', margin, margin, contentW, sliceDrawH);
+                sliceY += sliceH;
+                page++;
+            }
+
+            var filename = '考勤报表_' + month + '.pdf';
+            var pdfBlob = pdf.output('blob');
+            var blobUrl = URL.createObjectURL(pdfBlob);
+
+            // 微信单独处理，其他浏览器直接下载（避免生成两个文件）
+            var isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+            if (isWeChat) {
+                window.open(blobUrl, '_blank');
+            } else {
+                var a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = filename;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+
+            // 保存报表记录到Supabase
+            (async function() {
+                var reportsRes = await _supabase.from('reports').select('id').eq('month', month);
+                if (reportsRes.data && reportsRes.data.length > 0) {
+                    await _supabase.from('reports').delete().eq('month', month);
+                }
+                await _supabase.from('reports').insert({
+                    month: month, 
+                    creator: creator, 
+                    total_users: totalUsers, 
+                    create_time: Date.now()
+                });
+                await renderReportList();
+            })();
+
+            document.getElementById('loadingMask').classList.remove('show');
+        }).catch(function(err) {
+            document.getElementById('loadingMask').classList.remove('show');
+            alert('PDF生成失败，请重试！');
+            console.error(err);
+        });
+    }, 300);
+}
+
+// ── 报表列表 ──────────────────────────────────────────
+async function renderReportList() {
+    var container   = document.getElementById('reportList');
+    var currentUser = getCurrentUser();
+    var isAdmin     = currentUser && currentUser.role === 'admin';
+
+    var res = await _supabase.from('reports').select('*').order('create_time', { ascending: false });
+    var reports = res.data || [];
+
+    if (reports.length === 0) {
+        container.innerHTML = '<div class="empty-tip">暂无生成的报表</div>';
+        return;
+    }
+    container.innerHTML = reports.map(function(r) {
+        return '<div class="report-item">' +
+            '<div class="report-info">' +
+                '<h4>' + r.month + ' 月度考勤报表</h4>' +
+                '<p>生成时间：' + new Date(r.create_time).toLocaleString('zh-CN') + ' | 生成人：' + r.creator + ' | 员工数：' + r.total_users + '</p>' +
+            '</div>' +
+            (isAdmin ? '<div class="report-actions"><button class="btn btn-danger" onclick="deleteReport(' + r.id + ')">删除</button></div>' : '') +
+        '</div>';
+    }).join('');
+}
+
+async function deleteReport(id) {
+    if (!confirm('确定要删除这个报表记录吗？')) return;
+    var res = await _supabase.from('reports').delete().eq('id', id);
+    if (res.error) { alert('删除失败：' + res.error.message); return; }
+    await renderReportList();
+    alert('删除成功！');
+}
+
+// ── 页面初始化 ────────────────────────────────────────
+window.onload = async function() {
+    if (!checkLogin()) return;
+    var currentUser = getCurrentUser();
+    if (currentUser.role !== 'admin') {
+        document.getElementById('generateBtnGroup').style.display = 'none';
+    }
+    document.getElementById('reportMonth').value = getCurrentMonth();
+    await renderReportList();
+};
+</script>
+</body>
+</html>
