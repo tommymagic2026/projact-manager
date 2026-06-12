@@ -409,7 +409,7 @@ function exportProductsPDF() {
         '.btn-print{background:#27ae60;color:#fff;border:none;padding:10px 22px;border-radius:6px;font-size:15px;cursor:pointer;}' +
         '@media print{body{margin:10mm;}.btn-bar{display:none;}}</style></head><body>' +
         '<div class="btn-bar">' +
-            '<button class="btn-back" onclick="window.close()">← 返回</button>' +
+            '<button class="btn-back" onclick="history.length>1?history.back():window.close()">← 返回</button>' +
             '<button class="btn-print" onclick="window.print()">🖨 打印/保存PDF</button>' +
         '</div>' +
         '<h2>原材料产品列表</h2>' +
