@@ -29,9 +29,11 @@ body {font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-s
 .form-group textarea {min-height: 50px;resize: vertical;}
 .form-actions {display: flex;gap: 8px;margin-top: 12px;}
 .search-box {margin-bottom: 10px;}
-.search-box-row1 {display: flex;gap: 6px;align-items: center;margin-bottom: 6px;}
-.search-box-row2 {display: flex;gap: 6px;}
-.search-box-row2 .btn {flex: 1;text-align: center;}
+.search-bar {display: flex;gap: 6px;align-items: center;margin-bottom: 8px;}
+.search-bar input {flex: 1;padding: 8px 10px;border: 1px solid #ddd;border-radius: 6px;font-size: 14px;min-width: 0;}
+.search-bar .btn {white-space: nowrap;padding: 8px 12px;font-size: 13px;}
+.action-bar {display: grid;grid-template-columns: 1fr 1fr;gap: 8px;}
+.action-bar .btn {padding: 9px 0;font-size: 13px;font-weight: 500;border-radius: 6px;text-align: center;}
 .search-box input {flex: 1;padding: 8px 10px;border: 1px solid #ddd;border-radius: 4px;font-size: 14px;}
 /* 产品卡片网格 */
 .product-grid {display: grid;grid-template-columns: repeat(2, 1fr);gap: 6px;margin-top: 4px;}
@@ -42,6 +44,14 @@ body {font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-s
 .product-card-qty {font-size: 12px;color: #27ae60;font-weight: 600;}
 .product-card-btn {margin-top: 2px;}
 .product-card-btn .btn {width: 100%;padding: 5px 0;font-size: 12px;}
+/* 管理员产品卡片列表 */
+.admin-product-list {display: flex;flex-direction: column;gap: 6px;}
+.admin-product-item {display: flex;align-items: center;padding: 8px 10px;border: 1px solid #eee;border-radius: 8px;background: #fafafa;gap: 8px;}
+.admin-product-id {font-size: 11px;color: #aaa;width: 20px;flex-shrink: 0;text-align: center;}
+.admin-product-name {flex: 1;font-size: 13px;font-weight: 600;color: #2c3e50;line-height: 1.3;}
+.admin-product-unit {font-size: 12px;color: #888;background: #f0f0f0;padding: 2px 7px;border-radius: 10px;white-space: nowrap;}
+.admin-product-actions {display: flex;gap: 5px;flex-shrink: 0;}
+.admin-product-actions .btn {padding: 5px 10px;font-size: 12px;border-radius: 5px;}
 table {width: 100%;border-collapse: collapse;}
 table th,table td {padding: 7px 8px;text-align: left;border-bottom: 1px solid #eee;font-size: 13px;}
 table th {background: #f8f9fa;font-weight: 600;}
@@ -100,29 +110,16 @@ table th,table td {padding: 5px 4px;}
     <div id="adminSection" class="card" style="display: none;">
         <h3>原材料产品管理</h3>
         <div class="search-box">
-            <div class="search-box-row1">
+            <div class="search-bar">
                 <input type="text" id="searchProductInput" placeholder="搜索产品名称..." oninput="searchProducts()">
                 <button class="btn btn-primary" onclick="searchProducts()">搜索</button>
             </div>
-            <div class="search-box-row2">
+            <div class="action-bar">
                 <button class="btn btn-success" onclick="openAddModal()">➕ 添加产品</button>
                 <button class="btn btn-info" onclick="exportProductsPDF()">📄 导出PDF</button>
             </div>
         </div>
-        <div style="overflow-x: auto;">
-            <table id="productTable">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>产品名称</th>
-                        <th>单位</th>
-                        <th>备注</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody id="productTableBody"></tbody>
-            </table>
-        </div>
+        <div id="adminProductList" class="admin-product-list"></div>
     </div>
 
     <!-- 员工采购下单 -->
@@ -285,29 +282,28 @@ async function initPage() {
 // ── 产品管理（管理员）───────────────────────────────────
 async function renderProductList(filter) {
     filter = filter || '';
-    var tbody = document.getElementById('productTableBody');
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;padding:20px;">加载中...</td></tr>';
+    var container = document.getElementById('adminProductList');
+    container.innerHTML = '<div style="text-align:center;color:#999;padding:16px;font-size:13px;">加载中...</div>';
     var products = await getProducts();
     if (filter) {
-        products = products.filter(function(p) {
-            return p.name.includes(filter);
-        });
+        products = products.filter(function(p) { return p.name.includes(filter); });
     }
     if (products.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;padding:20px;">暂无原材料数据</td></tr>';
+        container.innerHTML = '<div style="text-align:center;color:#999;padding:16px;font-size:13px;">暂无原材料数据</div>';
         return;
     }
-    tbody.innerHTML = products.map(function(p) {
-        return '<tr>' +
-            '<td>' + p.id + '</td>' +
-            '<td>' + p.name + '</td>' +
-            '<td>' + p.unit + '</td>' +
-            '<td>' + (p.remark || '-') + '</td>' +
-            '<td><div class="action-btns">' +
+    container.innerHTML = products.map(function(p) {
+        return '<div class="admin-product-item">' +
+            '<span class="admin-product-id">' + p.id + '</span>' +
+            '<span class="admin-product-name">' + p.name +
+                (p.remark ? '<br><small style="color:#aaa;font-weight:400;">' + p.remark + '</small>' : '') +
+            '</span>' +
+            '<span class="admin-product-unit">' + p.unit + '</span>' +
+            '<div class="admin-product-actions">' +
                 '<button class="btn btn-warning" onclick="editProduct(' + p.id + ')">编辑</button>' +
                 '<button class="btn btn-danger" onclick="deleteProduct(' + p.id + ')">删除</button>' +
-            '</div></td>' +
-        '</tr>';
+            '</div>' +
+        '</div>';
     }).join('');
 }
 
