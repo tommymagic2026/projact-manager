@@ -66,6 +66,25 @@ table th,table td {padding: 5px 4px;}
 .action-btns .btn {padding: 3px 6px;font-size: 11px;}
 .search-form .form-group {min-width: 100%;}
 }
+/* 打印预览覆盖层 */
+#printOverlay {display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#fff;z-index:9999;overflow-y:auto;padding:16px;}
+#printOverlay.show {display:block;}
+.print-overlay-bar {display:flex;gap:10px;margin-bottom:16px;position:sticky;top:0;background:#fff;padding:10px 0;border-bottom:1px solid #eee;z-index:1;}
+.print-overlay-bar button {flex:1;padding:10px 0;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;}
+.btn-do-print {background:#27ae60;color:#fff;}
+.btn-close-print {background:#95a5a6;color:#fff;}
+.print-body h2 {text-align:center;font-size:18px;margin-bottom:14px;letter-spacing:2px;}
+.print-info {background:#eef4fb;border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:12px;line-height:2;}
+.print-table {width:100%;border-collapse:collapse;margin-bottom:14px;}
+.print-table th,.print-table td {border:1px solid #bbb;padding:7px 10px;text-align:center;font-size:13px;}
+.print-table th {background:#2c3e50;color:#fff;font-weight:600;}
+.print-table tr:nth-child(even) {background:#f5f7fa;}
+.print-summary {background:#f5f5f5;border-radius:4px;padding:8px 14px;text-align:right;font-weight:600;font-size:13px;}
+@media print {
+  body > *:not(#printOverlay) {display:none !important;}
+  #printOverlay {display:block !important;position:static !important;padding:0 !important;overflow:visible !important;}
+  .print-overlay-bar {display:none !important;}
+}
 </style>
 <script src="https://unpkg.com/@supabase/supabase-js"></script>
 <script src="supabase-config.js"></script>
@@ -103,6 +122,15 @@ table th,table td {padding: 5px 4px;}
         <div id="orderList">
         </div>
     </div>
+</div>
+
+<!-- 打印预览覆盖层（无需新窗口，兼容iOS微信）-->
+<div id="printOverlay">
+    <div class="print-overlay-bar">
+        <button class="btn-do-print" onclick="doPrint()">🖨 打印 / 保存PDF</button>
+        <button class="btn-close-print" onclick="closePrintOverlay()">✕ 关闭</button>
+    </div>
+    <div id="printContent"></div>
 </div>
 
 <!-- 订单详情模态框 -->
@@ -595,7 +623,7 @@ function cancelEdit() {
     document.getElementById('orderModalTitle').textContent = '订单详情';
 }
 
-// ── 导出订单PDF（Blob URL方式，兼容iOS和Android）──────
+// ── 导出订单PDF（当前页面内渲染，彻底兼容iOS微信/Safari）──
 function exportOrderPDF() {
     if (!currentViewingOrderId) return;
 
@@ -608,7 +636,7 @@ function exportOrderPDF() {
     var totalQuantity = order.items.reduce(function(sum, item) { return sum + item.quantity; }, 0);
 
     var rows = order.items.map(function(item, i) {
-        return '<tr>' +
+        return '<tr class="print-table-row">' +
             '<td>' + (i + 1) + '</td>' +
             '<td>' + item.name + '</td>' +
             '<td>' + item.unit + '</td>' +
@@ -616,51 +644,34 @@ function exportOrderPDF() {
         '</tr>';
     }).join('');
 
-    var printHtml = '<!DOCTYPE html><html lang="zh-CN"><head>' +
-        '<meta charset="UTF-8">' +
-        '<title>采购订单_' + order.date + '_' + order.user_name + '</title>' +
-        '<style>' +
-        'body{font-family:"Microsoft YaHei","PingFang SC","Heiti SC",sans-serif;margin:20mm 15mm;color:#222;font-size:13px;}' +
-        'h2{text-align:center;font-size:20px;margin-bottom:18px;letter-spacing:2px;}' +
-        '.info{background:#eef4fb;border-radius:6px;padding:10px 16px;margin-bottom:18px;line-height:2;}' +
-        '.info span{margin-right:30px;}' +
-        'table{width:100%;border-collapse:collapse;margin-bottom:16px;}' +
-        'th,td{border:1px solid #bbb;padding:8px 12px;text-align:center;}' +
-        'th{background:#2c3e50;color:#fff;font-weight:600;}' +
-        'tr:nth-child(even){background:#f5f7fa;}' +
-        '.summary{background:#f5f5f5;border-radius:4px;padding:10px 16px;text-align:right;font-weight:600;}' +
-        '.btn-bar{margin-bottom:18px;display:flex;gap:10px;}' +
-        '.btn-print{background:#27ae60;color:#fff;border:none;padding:10px 22px;border-radius:6px;font-size:15px;cursor:pointer;}' +
-        '@media print{body{margin:10mm;}.btn-bar{display:none;}}' +
-        '</style></head><body>' +
-        '<div class="btn-bar">' +
-            '<button class="btn-print" onclick="window.print()">🖨 打印/保存PDF</button>' +
-        '</div>' +
+    var html =
         '<h2>原材料采购订单</h2>' +
-        '<div class="info">' +
-            '<span>订单编号：<strong>' + order.id + '</strong></span>' +
-            '<span>下单日期：<strong>' + order.date + '</strong></span><br>' +
-            '<span>下单员工：<strong>' + order.user_name + '</strong></span>' +
-            '<span>生成时间：<strong>' + new Date().toLocaleString('zh-CN') + '</strong></span>' +
+        '<div class="print-info">' +
+            '订单编号：<strong>' + order.id + '</strong>　' +
+            '下单日期：<strong>' + order.date + '</strong><br>' +
+            '下单员工：<strong>' + order.user_name + '</strong>　' +
+            '生成时间：<strong>' + new Date().toLocaleString('zh-CN') + '</strong>' +
         '</div>' +
-        '<table>' +
+        '<table class="print-table">' +
         '<thead><tr><th>序号</th><th>产品名称</th><th>单位</th><th>数量</th></tr></thead>' +
         '<tbody>' + rows + '</tbody>' +
         '</table>' +
-        '<div class="summary">共 ' + totalItems + ' 项商品，总数量：' + totalQuantity.toFixed(1) + '</div>' +
-        '</body></html>';
+        '<div class="print-summary">共 ' + totalItems + ' 项商品，总数量：' + totalQuantity.toFixed(1) + '</div>';
 
-    // 用Blob URL方式，避免iOS Safari的弹出窗口拦截
-    var blob = new Blob([printHtml], { type: 'text/html;charset=utf-8' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.target = '_blank';
-    a.rel = 'noopener';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(function() { URL.revokeObjectURL(url); }, 3000);
+    document.getElementById('printContent').innerHTML = html;
+    // 关闭订单弹窗，显示打印覆盖层
+    document.getElementById('orderModal').classList.remove('show');
+    document.getElementById('printOverlay').classList.add('show');
+    window.scrollTo(0, 0);
+}
+
+function doPrint() {
+    window.print();
+}
+
+function closePrintOverlay() {
+    document.getElementById('printOverlay').classList.remove('show');
+    document.getElementById('printContent').innerHTML = '';
 }
 
 function closeOrderModal() {
