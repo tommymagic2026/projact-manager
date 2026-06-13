@@ -7,10 +7,10 @@
 <style>
 * {margin: 0;padding: 0;box-sizing: border-box;}
 body {font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;background: #f5f5f5;min-height: 100vh;}
-.container {max-width: 800px;margin: 0 auto;padding: 8px;} /* 减小外部边距 */
-.header {background: #2c3e50;color: white;padding: 10px 12px;border-radius: 6px;margin-bottom: 8px;display: flex;justify-content: space-between;align-items: center;}
-.header h1 {font-size: 15px;}
-.btn {padding: 6px 12px;border: none;border-radius: 4px;cursor: pointer;font-size: 13px;transition: all 0.3s;font-weight: 500;}
+.container {max-width: 800px;margin: 0 auto;padding: 15px;}
+.header {background: #2c3e50;color: white;padding: 15px;border-radius: 8px;margin-bottom: 15px;display: flex;justify-content: space-between;align-items: center;}
+.header h1 {font-size: 18px;}
+.btn {padding: 8px 16px;border: none;border-radius: 4px;cursor: pointer;font-size: 14px;transition: all 0.3s;}
 .btn-primary {background: #3498db;color: white;}
 .btn-primary:hover {background: #2980b9;}
 .btn-danger {background: #e74c3c;color: white;}
@@ -23,65 +23,48 @@ body {font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-s
 .btn-info:hover {background: #138496;}
 .btn-default {background: #95a5a6;color: white;}
 .btn-default:hover {background: #7f8c8d;}
-
-.card {background: white;border-radius: 6px;padding: 12px;margin-bottom: 8px;box-shadow: 0 1px 3px rgba(0,0,0,0.05);}
-.card h3 {margin-bottom: 10px;color: #333;font-size: 14px;border-bottom: 1px solid #eee;padding-bottom: 6px;}
-
-.form-group {margin-bottom: 10px;}
-.form-group label {display: block;margin-bottom: 3px;font-size: 12px;font-weight: 500;color: #333;}
-.form-group input,.form-group select {width: 100%;padding: 8px;border: 1px solid #ddd;border-radius: 4px;font-size: 13px;height: 34px;}
-
-.search-form {display: flex;gap: 8px;align-items: flex-end;flex-wrap: wrap;}
-.search-form .form-group {flex: 1;min-width: 120px;margin-bottom: 0;}
-
+.card {background: white;border-radius: 8px;padding: 15px;margin-bottom: 15px;box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
+.card h3 {margin-bottom: 15px;color: #333;font-size: 16px;border-bottom: 1px solid #eee;padding-bottom: 10px;}
+.form-group {margin-bottom: 15px;}
+.form-group label {display: block;margin-bottom: 5px;font-weight: 500;color: #333;}
+.form-group input,.form-group select {width: 100%;padding: 10px;border: 1px solid #ddd;border-radius: 4px;font-size: 14px;}
+.search-form {display: flex;gap: 10px;align-items: end;flex-wrap: wrap;}
+.search-form .form-group {flex: 1;min-width: 150px;margin-bottom: 0;}
 table {width: 100%;border-collapse: collapse;}
-table th,table td {padding: 6px 8px;text-align: left;border-bottom: 1px solid #eee;font-size: 12px;}
-table th {background: #f8f9fa;font-weight: 600;color: #555;}
+table th,table td {padding: 10px;text-align: left;border-bottom: 1px solid #eee;}
+table th {background: #f8f9fa;font-weight: 600;}
 table tr:hover {background: #f8f9fa;}
-.action-btns {display: flex;gap: 4px;flex-wrap: wrap;}
-.action-btns .btn {padding: 3px 6px;font-size: 11px;}
-
+.action-btns {display: flex;gap: 5px;flex-wrap: wrap;}
+.action-btns .btn {padding: 5px 10px;font-size: 12px;}
 .modal {display: none;position: fixed;top: 0;left: 0;width: 100%;height: 100%;background: rgba(0,0,0,0.5);z-index: 1000;justify-content: center;align-items: center;}
 .modal.show {display: flex;}
-.modal-content {background: white;border-radius: 8px;padding: 15px;width: 92%;max-width: 500px;max-height: 85vh;overflow-y: auto;}
-.modal-header {display: flex;justify-content: space-between;align-items: center;margin-bottom: 10px;}
-.modal-header h2 {font-size: 15px;}
-.close-btn {background: none;border: none;font-size: 22px;cursor: pointer;color: #999;}
-
-.order-info {background: #e8f4f8;padding: 8px 12px;border-radius: 5px;margin-bottom: 10px;}
-.order-info p {font-size: 12px;color: #555;margin: 3px 0;}
-
-/* 极简紧凑明细单排排版 */
-.order-item {
-    border-bottom: 1px dashed #eee;
-    padding: 6px 0;
-    margin-bottom: 0;
-    border-radius: 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.order-item:last-child {border-bottom: none;}
+.modal-content {background: white;border-radius: 8px;padding: 20px;width: 90%;max-width: 600px;max-height: 90vh;overflow-y: auto;}
+.modal-header {display: flex;justify-content: space-between;align-items: center;margin-bottom: 15px;}
+.modal-header h2 {font-size: 18px;}
+.close-btn {background: none;border: none;font-size: 24px;cursor: pointer;color: #999;}
+.order-info {background: #e8f4f8;padding: 12px;border-radius: 6px;margin-bottom: 15px;}
+.order-info p {font-size: 13px;color: #666;margin: 5px 0;}
+.order-item {border: 1px solid #eee;border-radius: 6px;padding: 10px;margin-bottom: 10px;display: flex;justify-content: space-between;align-items: center;}
 .order-item-info {flex: 1;}
-.order-item-name {font-weight: 600;color: #2c3e50;font-size: 13px;}
-.order-item-spec {font-size: 11px;color: #888;}
-.order-item-actions {text-align: right;font-weight: bold;color: #2c3e50;font-size: 13px;}
-
-.quantity-input {width: 60px;height: 28px;padding: 2px;text-align: center;border: 1px solid #ccc;border-radius: 4px;font-size: 13px;}
-
-.status-badge {padding: 3px 6px;border-radius: 4px;font-size: 11px;font-weight: bold;}
-.empty-tip {text-align: center;color: #999;padding: 20px;font-size: 12px;}
-
-.summary-box {background: #f8f9fa;padding: 10px;border-radius: 6px;margin-top: 10px;}
-.summary-item {display: flex;justify-content: space-between;padding: 4px 0;font-size: 12px;border-bottom: 1px solid #dee2e6;}
-.summary-item:last-child {border-bottom: none;font-weight: bold;font-size: 13px;}
+.order-item-name {font-weight: 600;color: #2c3e50;margin-bottom: 3px;}
+.order-item-spec {font-size: 12px;color: #666;}
+.quantity-input {width: 80px;padding: 5px;text-align: center;}
+.status-badge {padding: 4px 8px;border-radius: 4px;font-size: 12px;font-weight: bold;}
+.status-pending {background: #fff3cd;color: #856404;}
+.status-confirmed {background: #d4edda;color: #155724;}
+.empty-tip {text-align: center;color: #999;padding: 30px;}
+.summary-box {background: #f8f9fa;padding: 15px;border-radius: 6px;margin-top: 15px;}
+.summary-item {display: flex;justify-content: space-between;padding: 8px 0;border-bottom: 1px solid #dee2e6;}
+.summary-item:last-child {border-bottom: none;font-weight: bold;}
 .summary-item span:first-child {color: #666;}
 .summary-item span:last-child {color: #2c3e50;}
-
 @media (max-width: 600px) {
-    table {font-size: 11px;}
-    table th,table td {padding: 5px 6px;}
-    .search-form .form-group {min-width: 100%;}
+table {font-size: 12px;}
+table th,table td {padding: 6px;}
+.action-btns .btn {padding: 4px 8px;font-size: 11px;}
+.order-item {flex-direction: column;align-items: flex-start;gap: 10px;}
+.order-item-actions {width: 100%;display: flex;justify-content: flex-end;}
+.search-form .form-group {min-width: 100%;}
 }
 </style>
 <script src="https://unpkg.com/@supabase/supabase-js"></script>
@@ -107,15 +90,18 @@ table tr:hover {background: #f8f9fa;}
                     <option value="">全部员工</option>
                 </select>
             </div>
-            <div class="form-group" style="flex: 0 0 auto;">
-                <button type="submit" class="btn btn-primary" style="height: 34px;">查询</button>
+
+            <div class="form-group">
+                <label>&nbsp;</label>
+                <button type="submit" class="btn btn-primary">查询</button>
             </div>
         </form>
     </div>
 
     <div class="card">
         <h3>采购订单列表</h3>
-        <div id="orderList" style="overflow-x: auto;"></div>
+        <div id="orderList">
+        </div>
     </div>
 </div>
 
@@ -126,8 +112,9 @@ table tr:hover {background: #f8f9fa;}
             <h2 id="orderModalTitle">订单详情</h2>
             <button class="close-btn" onclick="closeOrderModal()">&times;</button>
         </div>
-        <div id="orderDetail" style="max-height: 50vh; overflow-y: auto; padding-right: 2px;"></div>
-        <div id="orderActions" style="margin-top: 15px;display: flex;gap: 6px;justify-content: flex-end;">
+        <div id="orderDetail">
+        </div>
+        <div id="orderActions" style="margin-top: 20px;display: flex;gap: 10px;justify-content: flex-end;">
             <button type="button" class="btn btn-default" onclick="closeOrderModal()">关闭</button>
         </div>
     </div>
@@ -148,7 +135,11 @@ function checkLogin() {
     }
     return true;
 }
-
+function getUsers() {
+    var u = localStorage.getItem('attendance_users');
+    return u ? JSON.parse(u) : [];
+}
+// 产品内存缓存（从 Supabase 加载后存这里，避免重复请求）
 var _productsCache = null;
 
 async function getProducts() {
@@ -157,7 +148,15 @@ async function getProducts() {
     _productsCache = res.data || [];
     return _productsCache;
 }
+function getOrders() {
+    var o = localStorage.getItem('store_orders');
+    return o ? JSON.parse(o) : [];
+}
+function saveOrders(orders) {
+    localStorage.setItem('store_orders', JSON.stringify(orders));
+}
 
+// ── 获取当前日期 ──────────────────────────────────────
 function getTodayStr() {
     var now = new Date();
     var year = now.getFullYear();
@@ -166,17 +165,27 @@ function getTodayStr() {
     return year + '-' + month + '-' + day;
 }
 
+// ── 初始化页面 ─────────────────────────────────────────
 async function initPage() {
     if (!checkLogin()) return;
+
+    // 从云端加载员工列表
     await loadUserOptions();
+
+    // 设置默认日期为今天
     document.getElementById('searchDate').value = getTodayStr();
+
+    // 搜索订单
     await searchOrders();
 }
 
+// 从Supabase云端加载员工列表
 async function loadUserOptions() {
     var select = document.getElementById('searchUser');
+    // 清空现有选项，保留"全部员工"
     select.innerHTML = '<option value="">全部员工</option>';
     
+    // 从云端users表拉取所有员工
     const { data: users, error } = await _supabase
         .from('users')
         .select('*')
@@ -197,27 +206,39 @@ async function loadUserOptions() {
     }
 }
 
+// ── 搜索订单 ───────────────────────────────────────────
 async function searchOrders() {
     var container = document.getElementById('orderList');
     var searchDate = document.getElementById('searchDate').value;
     var searchUserId = document.getElementById('searchUser').value;
 
-    let query = _supabase.from('orders').select('*');
+    // 从Supabase云端查询订单
+    let query = _supabase
+        .from('orders')
+        .select('*');
+    
+    // 如果选择了日期，按日期筛选
     if (searchDate) {
         query = query.eq('date', searchDate);
     }
+    
+    // 如果选择了特定员工，添加员工筛选
     if (searchUserId) {
         query = query.eq('user_id', parseInt(searchUserId));
     }
+    
+    // 按ID倒序排列（新的在前）
     query = query.order('id', { ascending: false });
     
     const { data: orders, error } = await query;
+    
     if (error) {
         console.error('查询订单失败:', error);
         alert('查询订单失败：' + error.message);
         return;
     }
     
+    // 将查询结果存入全局缓存
     window.currentOrdersCache = orders || [];
 
     if (window.currentOrdersCache.length === 0) {
@@ -226,16 +247,16 @@ async function searchOrders() {
     }
 
     var isAdmin = getCurrentUser() && getCurrentUser().role === 'admin';
-    container.innerHTML = '<table><thead><tr><th>日期</th><th>员工</th><th>项数</th><th>创建时间</th><th>操作</th></tr></thead><tbody>' +
+    container.innerHTML = '<table><thead><tr><th>日期</th><th>员工</th><th>商品数量</th><th>创建时间</th><th>操作</th></tr></thead><tbody>' +
         window.currentOrdersCache.map(function(o) {
-            var createDate = o.created_at ? new Date(o.created_at).toLocaleTimeString('zh-CN', {hour: '2-digit', minute:'2-digit'}) : '';
+            var createDate = o.created_at ? new Date(o.created_at).toLocaleString('zh-CN') : '';
             var deleteBtnHtml = isAdmin
                 ? '<button type="button" class="btn btn-danger" onclick="deleteOrder(' + o.id + ')">删除</button>'
                 : '';
             return '<tr>' +
-                '<td>' + o.date.substring(5) + '</td>' +
+                '<td>' + o.date + '</td>' +
                 '<td>' + o.user_name + '</td>' +
-                '<td>' + (o.items ? o.items.length : 0) + '项</td>' +
+                '<td>' + (o.items ? o.items.length : 0) + ' 项</td>' +
                 '<td>' + createDate + '</td>' +
                 '<td><div class="action-btns">' +
                     '<button type="button" class="btn btn-info" onclick="viewOrder(' + o.id + ')">查看</button>' +
@@ -246,9 +267,11 @@ async function searchOrders() {
         '</tbody></table>';
 }
 
+// ── 删除订单（仅管理员）──────────────────────────────────
 async function deleteOrder(id) {
     if (!confirm('确定要删除这条采购订单吗？此操作不可撤销！')) return;
     
+    // 从Supabase云端删除
     const { error } = await _supabase
         .from('orders')
         .delete()
@@ -261,14 +284,18 @@ async function deleteOrder(id) {
     }
     
     alert('删除成功！');
+    // 重新搜索订单
     await searchOrders();
+    // 关闭弹窗
     closeOrderModal();
 }
 
+// ── 查看订单详情 ───────────────────────────────────────
 var currentViewingOrderId = null;
-var editingOrder = null;
+var editingOrder = null; // 编辑模式下的订单副本
 
 function viewOrder(id) {
+    // 从全局缓存中查找订单
     var order = window.currentOrdersCache.find(function(o) { return o.id === id; });
     if (!order) {
         alert('订单不存在，请刷新页面后重试！');
@@ -276,16 +303,17 @@ function viewOrder(id) {
     }
 
     currentViewingOrderId = id;
+
     var container = document.getElementById('orderDetail');
 
     var html = '<div class="order-info">' +
         '<p><strong>订单编号：</strong>' + order.id + '</p>' +
-        '<p><strong>下单日期：</strong>' + order.date + '　|　<strong>下单人：</strong>' + order.user_name + '</p>' +
+        '<p><strong>下单日期：</strong>' + order.date + '</p>' +
+        '<p><strong>下单员工：</strong>' + order.user_name + '</p>' +
         '<p><strong>创建时间：</strong>' + new Date(order.created_at).toLocaleString('zh-CN') + '</p>' +
     '</div>' +
-    '<h4 style="margin-bottom: 5px;color: #2c3e50;font-size:13px;font-weight:600;">采购商品明细</h4>';
+    '<h4 style="margin-bottom: 10px;color: #2c3e50;">采购商品明细</h4>';
 
-    html += '<div style="border: 1px solid #eee; border-radius: 6px; padding: 0 10px; background:#fff;">';
     html += order.items.map(function(item) {
         return '<div class="order-item">' +
             '<div class="order-item-info">' +
@@ -293,12 +321,12 @@ function viewOrder(id) {
                 '<div class="order-item-spec">单位：' + item.unit + '</div>' +
             '</div>' +
             '<div class="order-item-actions">' +
-                item.quantity + ' ' + item.unit +
+                '<span style="font-weight: bold;">' + item.quantity + ' ' + item.unit + '</span>' +
             '</div>' +
         '</div>';
     }).join('');
-    html += '</div>';
 
+    // 统计
     html += '<div class="summary-box">' +
         '<div class="summary-item">' +
             '<span>总商品项数：</span>' +
@@ -312,11 +340,13 @@ function viewOrder(id) {
 
     container.innerHTML = html;
 
+    // 显示操作按钮
     document.getElementById('orderActions').innerHTML = '';
     var currentUser = getCurrentUser();
     var today = getTodayStr();
     var canEdit = false;
     
+    // 管理员始终可以编辑，普通员工只能编辑当天的订单
     if (currentUser && currentUser.role === 'admin') {
         canEdit = true;
     } else if (order.date === today) {
@@ -328,11 +358,14 @@ function viewOrder(id) {
     }
     document.getElementById('orderActions').innerHTML += '<button type="button" class="btn btn-primary" onclick="exportOrderPDF()">导出PDF</button>' +
         '<button type="button" class="btn btn-default" onclick="closeOrderModal()">关闭</button>';
+    document.getElementById('orderActions').style.display = 'flex';
 
     document.getElementById('orderModal').classList.add('show');
 }
 
+// ── 进入编辑模式 ───────────────────────────────────────
 async function enterEditMode() {
+    // 只有首次进入编辑时才从缓存初始化，重新渲染时保留已有的 editingOrder
     if (!editingOrder) {
         var order = window.currentOrdersCache
             ? window.currentOrdersCache.find(function(o) { return o.id === currentViewingOrderId; })
@@ -346,48 +379,55 @@ async function enterEditMode() {
 
     var html = '<div class="order-info">' +
         '<p><strong>订单编号：</strong>' + editingOrder.id + '</p>' +
-        '<p><strong>下单日期：</strong>' + editingOrder.date + ' | <strong>下单人：</strong>' + editingOrder.user_name + '</p>' +
+        '<p><strong>下单日期：</strong>' + editingOrder.date + '</p>' +
+        '<p><strong>下单员工：</strong>' + editingOrder.user_name + '</p>' +
+        '<p><strong>创建时间：</strong>' + new Date(editingOrder.created_at).toLocaleString('zh-CN') + '</p>' +
     '</div>' +
-    '<h4 style="margin-bottom: 5px;color: #2c3e50;font-size:13px;">编辑商品明细</h4>';
+    '<h4 style="margin-bottom: 10px;color: #2c3e50;">编辑采购商品明细</h4>';
 
-    html += '<div id="editItems" style="border:1px solid #eee; border-radius:6px; padding:0 8px; background:#fff; max-height:220px; overflow-y:auto;">';
+    html += '<div id="editItems">';
     editingOrder.items.forEach(function(item, index) {
         html += '<div class="order-item" data-index="' + index + '">' +
-            '<div class="order-item-info" style="flex:2;">' +
-                '<div class="order-item-name" style="font-size:12px;">' + item.name + '</div>' +
-                '<div class="order-item-spec" style="font-size:11px;">单位：' + item.unit + '</div>' +
+            '<div class="order-item-info">' +
+                '<div class="order-item-name">' + item.name + '</div>' +
+                '<div class="order-item-spec">单位：' + item.unit + '</div>' +
             '</div>' +
-            '<div style="display: flex;align-items: center;gap: 6px; flex-shrink:0;">' +
-                '<input type="number" step="0.1" min="0" class="quantity-input" style="height:26px; font-size:12px;" value="' + item.quantity + '" onchange="updateItemQuantity(' + index + ', this.value)">' +
-                '<span style="font-size:11px; min-width:15px;">' + item.unit + '</span>' +
-                '<button type="button" class="btn btn-danger" onclick="removeItem(' + index + ')" style="padding: 2px 6px; font-size: 11px;">删</button>' +
+            '<div style="display: flex;align-items: center;gap: 10px;">' +
+                '<input type="number" step="0.1" min="0" class="quantity-input" value="' + item.quantity + '" onchange="updateItemQuantity(' + index + ', this.value)">' +
+                '<span>' + item.unit + '</span>' +
+                '<button type="button" class="btn btn-danger btn-sm" onclick="removeItem(' + index + ')" style="padding: 3px 8px;font-size: 12px;">删除</button>' +
             '</div>' +
         '</div>';
     });
     html += '</div>';
 
+    // 添加新产品区域 —— 先把 options 拼好，再一次性插入
     var optionsHtml = '<option value="">请选择产品</option>';
     products.forEach(function(p) {
         optionsHtml += '<option value="' + p.id + '" data-name="' + p.name.toLowerCase() + '">' + p.name + ' (' + p.unit + ')</option>';
     });
-    html += '<div style="margin-top:10px;padding:10px;background:#f8f9fa;border-radius:6px;">'
-          +   '<h5 style="margin-bottom:6px;color:#2c3e50;font-size:12px;">快速添加商品</h5>'
-          +   '<div class="form-group" style="margin-bottom:6px;">'
-          +     '<input type="text" id="productSearchInput" placeholder="输入产品名称搜索..." oninput="filterProducts()" style="width:100%;padding:6px;height:30px;font-size:12px;border:1px solid #ddd;border-radius:4px;">'
+    html += '<div style="margin-top:15px;padding:15px;background:#f8f9fa;border-radius:6px;">'
+          +   '<h5 style="margin-bottom:10px;color:#2c3e50;">添加新产品</h5>'
+          +   '<div class="form-group" style="margin-bottom:10px;">'
+          +     '<label>搜索产品</label>'
+          +     '<input type="text" id="productSearchInput" placeholder="输入产品名称搜索..." oninput="filterProducts()" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">'
           +   '</div>'
-          +   '<div style="display:flex;gap:6px;align-items:center;flex-wrap:nowrap;">'
-          +     '<div class="form-group" style="flex:1;margin-bottom:0;">'
-          +       '<select id="newProductSelect" style="width:100%;padding:4px;height:30px;font-size:12px;border:1px solid #ddd;border-radius:4px;">'
+          +   '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">'
+          +     '<div class="form-group" style="flex:1;min-width:200px;margin-bottom:0;">'
+          +       '<label>选择产品</label>'
+          +       '<select id="newProductSelect" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">'
           +         optionsHtml
           +       '</select>'
           +     '</div>'
-          +     '<div class="form-group" style="width:70px;margin-bottom:0;">'
-          +       '<input type="number" step="0.1" min="0.1" id="newQuantity" value="1" style="width:100%;padding:4px;height:30px;font-size:12px;border:1px solid #ddd;border-radius:4px;text-align:center;">'
+          +     '<div class="form-group" style="width:120px;margin-bottom:0;">'
+          +       '<label>数量</label>'
+          +       '<input type="number" step="0.1" min="0.1" id="newQuantity" value="1" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">'
           +     '</div>'
-          +     '<button type="button" class="btn btn-success" onclick="addNewItem()" style="height:30px;padding:0 12px;font-size:12px;">添加</button>'
+          +     '<button type="button" class="btn btn-success" onclick="addNewItem()" style="height:38px;margin-top:20px;">添加</button>'
           +   '</div>'
           + '</div>';
 
+    // 统计
     var totalQuantity = editingOrder.items.reduce(function(sum, item) { return sum + item.quantity; }, 0);
     html += '<div class="summary-box">' +
         '<div class="summary-item">' +
@@ -402,13 +442,16 @@ async function enterEditMode() {
 
     container.innerHTML = html;
 
+    // 修改按钮
     document.getElementById('orderActions').innerHTML = '<button type="button" class="btn btn-success" onclick="saveEditOrder()">保存修改</button>' +
         '<button type="button" class="btn btn-default" onclick="cancelEdit()">取消</button>';
     document.getElementById('orderModalTitle').textContent = '编辑订单';
 }
 
+// ── 更新商品数量 ───────────────────────────────────────
 function updateItemQuantity(index, quantity) {
     if (!editingOrder) return;
+
     if (quantity === '' || parseFloat(quantity) < 0) {
         quantity = 0;
     }
@@ -416,17 +459,21 @@ function updateItemQuantity(index, quantity) {
     updateEditSummary();
 }
 
+// ── 删除商品 ───────────────────────────────────────────
 async function removeItem(index) {
     if (!editingOrder) return;
+
     if (editingOrder.items.length <= 1) {
         alert('订单至少保留一个商品！');
         return;
     }
+
     editingOrder.items.splice(index, 1);
-    await enterEditMode();
+    await enterEditMode(); // 重新渲染（async，需要 await 保证产品列表正确）
     updateEditSummary();
 }
 
+// ── 过滤产品 ───────────────────────────────────────────
 function filterProducts() {
     var searchText = document.getElementById('productSearchInput').value.toLowerCase();
     var select = document.getElementById('newProductSelect');
@@ -446,23 +493,41 @@ function filterProducts() {
     });
 }
 
+// ── 添加新商品 ─────────────────────────────────────────
 async function addNewItem() {
     var productSelectElem = document.getElementById('newProductSelect');
     var quantityElem = document.getElementById('newQuantity');
     
-    if (!productSelectElem || !quantityElem) return;
-    if (!editingOrder) return;
+    if (!productSelectElem || !quantityElem) {
+        console.error('找不到产品选择或数量输入框');
+        return;
+    }
+
+    if (!editingOrder) {
+        alert('订单不存在，请重新加载');
+        return;
+    }
 
     var productId = parseInt(productSelectElem.value);
     var quantity = parseFloat(quantityElem.value);
     var products = await getProducts();
 
-    if (!productId) { alert('请选择产品！'); return; }
-    if (!quantity || quantity <= 0) { alert('请输入正确的数量！'); return; }
+    if (!productId || productId === 0) {
+        alert('请选择产品！');
+        return;
+    }
+    if (!quantity || quantity <= 0) {
+        alert('请输入正确的数量！');
+        return;
+    }
 
     var product = products.find(function(p) { return p.id === productId; });
-    if (!product) return;
+    if (!product) {
+        alert('产品不存在！');
+        return;
+    }
 
+    // 添加到 editingOrder
     editingOrder.items.push({
         id: product.id,
         name: product.name,
@@ -470,12 +535,14 @@ async function addNewItem() {
         quantity: quantity
     });
 
-    await enterEditMode();
+    await enterEditMode(); // 重新渲染（async）
     updateEditSummary();
 }
 
+// ── 更新编辑页面统计 ───────────────────────────────────
 function updateEditSummary() {
     if (!editingOrder) return;
+
     var totalQuantity = editingOrder.items.reduce(function(sum, item) { return sum + item.quantity; }, 0);
     var countElem = document.getElementById('editItemCount');
     var totalElem = document.getElementById('editTotalQuantity');
@@ -483,14 +550,18 @@ function updateEditSummary() {
     if (totalElem) totalElem.textContent = totalQuantity.toFixed(1);
 }
 
+// ── 保存修改 ───────────────────────────────────────────
 async function saveEditOrder() {
     if (!editingOrder) return;
+
+    // 检查是否有空数量
     var hasEmpty = editingOrder.items.some(function(item) { return item.quantity <= 0; });
     if (hasEmpty) {
         alert('存在数量为0的商品，请删除或修改数量！');
         return;
     }
 
+    // 更新 Supabase 云端订单
     const { error } = await _supabase
         .from('orders')
         .update({ items: editingOrder.items })
@@ -501,6 +572,7 @@ async function saveEditOrder() {
         return;
     }
 
+    // 同步更新本地缓存
     if (window.currentOrdersCache) {
         var idx = window.currentOrdersCache.findIndex(function(o) { return o.id === editingOrder.id; });
         if (idx !== -1) window.currentOrdersCache[idx] = JSON.parse(JSON.stringify(editingOrder));
@@ -509,11 +581,13 @@ async function saveEditOrder() {
     editingOrder = null;
     alert('修改保存成功！');
 
+    // 返回查看模式
     await searchOrders();
     viewOrder(currentViewingOrderId);
     document.getElementById('orderModalTitle').textContent = '订单详情';
 }
 
+// ── 取消编辑 ───────────────────────────────────────────
 function cancelEdit() {
     editingOrder = null;
     searchOrders();
@@ -521,9 +595,13 @@ function cancelEdit() {
     document.getElementById('orderModalTitle').textContent = '订单详情';
 }
 
+// ── 导出订单PDF（使用浏览器打印，彻底解决中文乱码）──────
 function exportOrderPDF() {
     if (!currentViewingOrderId) return;
-    var order = window.currentOrdersCache.find(function(o) { return o.id === currentViewingOrderId; });
+
+    var order = window.currentOrdersCache
+        ? window.currentOrdersCache.find(function(o) { return o.id === currentViewingOrderId; })
+        : null;
     if (!order) return;
 
     var totalItems = order.items.length;
@@ -587,11 +665,13 @@ function exportOrderPDF() {
 function closeOrderModal() {
     document.getElementById('orderModal').classList.remove('show');
     currentViewingOrderId = null;
-    editingOrder = null;
 }
 
+// 【修复】使用 addEventListener 绑定表单提交事件
 document.addEventListener('DOMContentLoaded', function() {
     initPage();
+
+    // 搜索表单提交事件
     var searchForm = document.getElementById('searchForm');
     if (searchForm) {
         searchForm.addEventListener('submit', function(e) {
