@@ -595,7 +595,7 @@ function cancelEdit() {
     document.getElementById('orderModalTitle').textContent = '订单详情';
 }
 
-// ── 导出订单PDF（使用浏览器打印，彻底解决中文乱码）──────
+// ── 导出订单PDF（Blob URL方式，兼容iOS和Android）──────
 function exportOrderPDF() {
     if (!currentViewingOrderId) return;
 
@@ -630,12 +630,10 @@ function exportOrderPDF() {
         'tr:nth-child(even){background:#f5f7fa;}' +
         '.summary{background:#f5f5f5;border-radius:4px;padding:10px 16px;text-align:right;font-weight:600;}' +
         '.btn-bar{margin-bottom:18px;display:flex;gap:10px;}' +
-        '.btn-back{background:#2c3e50;color:#fff;border:none;padding:10px 22px;border-radius:6px;font-size:15px;cursor:pointer;}' +
         '.btn-print{background:#27ae60;color:#fff;border:none;padding:10px 22px;border-radius:6px;font-size:15px;cursor:pointer;}' +
         '@media print{body{margin:10mm;}.btn-bar{display:none;}}' +
         '</style></head><body>' +
         '<div class="btn-bar">' +
-            '<button class="btn-back" onclick="window.location.href=\'index.html\'">← 返回主页</button>' +
             '<button class="btn-print" onclick="window.print()">🖨 打印/保存PDF</button>' +
         '</div>' +
         '<h2>原材料采购订单</h2>' +
@@ -652,14 +650,17 @@ function exportOrderPDF() {
         '<div class="summary">共 ' + totalItems + ' 项商品，总数量：' + totalQuantity.toFixed(1) + '</div>' +
         '</body></html>';
 
-    var printWin = window.open('', '_blank', 'width=800,height=600');
-    if (!printWin) {
-        alert('请允许弹出窗口后再试！');
-        return;
-    }
-    printWin.document.open();
-    printWin.document.write(printHtml);
-    printWin.document.close();
+    // 用Blob URL方式，避免iOS Safari的弹出窗口拦截
+    var blob = new Blob([printHtml], { type: 'text/html;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 3000);
 }
 
 function closeOrderModal() {

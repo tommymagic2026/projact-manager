@@ -28,8 +28,20 @@ body {font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-s
 .form-group input,.form-group textarea,.form-group select {width: 100%;padding: 8px;border: 1px solid #ddd;border-radius: 4px;font-size: 14px;}
 .form-group textarea {min-height: 50px;resize: vertical;}
 .form-actions {display: flex;gap: 8px;margin-top: 12px;}
-.search-box {margin-bottom: 10px;display: flex;gap: 6px;align-items: center;}
+.search-box {margin-bottom: 10px;}
+.search-box-row1 {display: flex;gap: 6px;align-items: center;margin-bottom: 6px;}
+.search-box-row2 {display: flex;gap: 6px;}
+.search-box-row2 .btn {flex: 1;text-align: center;}
 .search-box input {flex: 1;padding: 8px 10px;border: 1px solid #ddd;border-radius: 4px;font-size: 14px;}
+/* 产品卡片网格 */
+.product-grid {display: grid;grid-template-columns: repeat(2, 1fr);gap: 6px;margin-top: 4px;}
+.product-card {border: 1px solid #e0e0e0;border-radius: 6px;padding: 8px 10px;background: #fff;display: flex;flex-direction: column;gap: 4px;transition: box-shadow 0.2s;}
+.product-card.selected {border-color: #27ae60;background: #f0faf4;}
+.product-card-name {font-size: 13px;font-weight: 600;color: #2c3e50;line-height: 1.3;}
+.product-card-meta {font-size: 11px;color: #888;}
+.product-card-qty {font-size: 12px;color: #27ae60;font-weight: 600;}
+.product-card-btn {margin-top: 2px;}
+.product-card-btn .btn {width: 100%;padding: 5px 0;font-size: 12px;}
 table {width: 100%;border-collapse: collapse;}
 table th,table td {padding: 7px 8px;text-align: left;border-bottom: 1px solid #eee;font-size: 13px;}
 table th {background: #f8f9fa;font-weight: 600;}
@@ -88,10 +100,14 @@ table th,table td {padding: 5px 4px;}
     <div id="adminSection" class="card" style="display: none;">
         <h3>原材料产品管理</h3>
         <div class="search-box">
-            <input type="text" id="searchProductInput" placeholder="搜索产品名称..." oninput="searchProducts()">
-            <button class="btn btn-primary" onclick="searchProducts()">搜索</button>
-            <button class="btn btn-success" onclick="openAddModal()">添加产品</button>
-            <button class="btn btn-info" onclick="exportProductsPDF()">导出产品PDF</button>
+            <div class="search-box-row1">
+                <input type="text" id="searchProductInput" placeholder="搜索产品名称..." oninput="searchProducts()">
+                <button class="btn btn-primary" onclick="searchProducts()">搜索</button>
+            </div>
+            <div class="search-box-row2">
+                <button class="btn btn-success" onclick="openAddModal()">➕ 添加产品</button>
+                <button class="btn btn-info" onclick="exportProductsPDF()">📄 导出PDF</button>
+            </div>
         </div>
         <div style="overflow-x: auto;">
             <table id="productTable">
@@ -113,22 +129,12 @@ table th,table td {padding: 5px 4px;}
     <div class="card">
         <h3>产品列表</h3>
         <div class="search-box">
-            <input type="text" id="searchOrderProductInput" placeholder="搜索产品名称..." oninput="renderOrderProducts()">
-            <button class="btn btn-primary" onclick="renderOrderProducts()">搜索</button>
+            <div class="search-box-row1">
+                <input type="text" id="searchOrderProductInput" placeholder="搜索产品名称..." oninput="renderOrderProducts()">
+                <button class="btn btn-primary" onclick="renderOrderProducts()">搜索</button>
+            </div>
         </div>
-        <div style="overflow-x: auto;">
-            <table id="productListTable">
-                <thead>
-                    <tr>
-                        <th>产品名称</th>
-                        <th>单位</th>
-                        <th>已选数量</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody id="productListBody"></tbody>
-            </table>
-        </div>
+        <div id="productGridContainer" class="product-grid"></div>
         <div style="margin-top: 15px;">
             <button class="btn btn-success" onclick="previewOrder()" style="width: 100%;font-size: 16px;padding: 12px;">采购下单</button>
         </div>
@@ -417,7 +423,7 @@ function exportProductsPDF() {
 
 // ── 员工选择产品 ───────────────────────────────────────
 async function renderOrderProducts() {
-    var tbody = document.getElementById('productListBody');
+    var container = document.getElementById('productGridContainer');
     var products = await getProducts();
     var searchText = document.getElementById('searchOrderProductInput').value.trim().toLowerCase();
 
@@ -428,22 +434,24 @@ async function renderOrderProducts() {
     }
 
     if (products.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;padding:20px;">暂无原材料数据</td></tr>';
+        container.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#999;padding:20px;">暂无原材料数据</div>';
         return;
     }
 
-    tbody.innerHTML = products.map(function(p) {
-        var quantity = selectedProducts[p.id] ? selectedProducts[p.id].quantity : 0;
-        return '<tr>' +
-            '<td>' + p.name + (p.remark ? '<br><small style="color:#666;">' + p.remark + '</small>' : '') + '</td>' +
-            '<td>' + p.unit + '</td>' +
-            '<td>' + (quantity > 0 ? quantity : '-') + '</td>' +
-            '<td><div class="action-btns">' +
-                (selectedProducts[p.id] ? 
-                    '<button class="btn btn-danger" onclick="removeProductFromOrder(' + p.id + ')">移除</button>' :
-                    '<button class="btn btn-success" onclick="addProductToOrder(' + p.id + ')">选择</button>') +
-            '</div></td>' +
-        '</tr>';
+    container.innerHTML = products.map(function(p) {
+        var isSelected = !!selectedProducts[p.id];
+        var quantity = isSelected ? selectedProducts[p.id].quantity : 0;
+        return '<div class="product-card' + (isSelected ? ' selected' : '') + '">' +
+            '<div class="product-card-name">' + p.name + '</div>' +
+            '<div class="product-card-meta">单位：' + p.unit +
+                (p.remark ? '　' + p.remark : '') + '</div>' +
+            (isSelected ? '<div class="product-card-qty">✓ 已选 ' + quantity + ' ' + p.unit + '</div>' : '') +
+            '<div class="product-card-btn">' +
+                (isSelected
+                    ? '<button class="btn btn-danger" onclick="removeProductFromOrder(' + p.id + ')">移除</button>'
+                    : '<button class="btn btn-success" onclick="addProductToOrder(' + p.id + ')">选择</button>') +
+            '</div>' +
+        '</div>';
     }).join('');
 }
 
@@ -671,9 +679,12 @@ function generateOrderPDF() {
         '<script>window.onload=function(){window.print();}<\/script>' +
         '</body></html>';
 
-    var w = window.open('', '_blank', 'width=800,height=600');
-    if (!w) { alert('请允许弹出窗口后重试！'); return; }
-    w.document.open(); w.document.write(html); w.document.close();
+    var w = new Blob([html], { type: 'text/html;charset=utf-8' });
+    var url = URL.createObjectURL(w);
+    var a = document.createElement('a');
+    a.href = url; a.target = '_blank'; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 3000);
 }
 
 // ── 提交订单 ─────────────────────────────────────────
