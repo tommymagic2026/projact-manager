@@ -66,25 +66,6 @@ table th,table td {padding: 5px 4px;}
 .action-btns .btn {padding: 3px 6px;font-size: 11px;}
 .search-form .form-group {min-width: 100%;}
 }
-/* 打印预览覆盖层 */
-#printOverlay {display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#fff;z-index:9999;overflow-y:auto;padding:16px;}
-#printOverlay.show {display:block;}
-.print-overlay-bar {display:flex;gap:10px;margin-bottom:16px;position:sticky;top:0;background:#fff;padding:10px 0;border-bottom:1px solid #eee;z-index:1;}
-.print-overlay-bar button {flex:1;padding:10px 0;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;}
-.btn-do-print {background:#27ae60;color:#fff;}
-.btn-close-print {background:#95a5a6;color:#fff;}
-.print-body h2 {text-align:center;font-size:18px;margin-bottom:14px;letter-spacing:2px;}
-.print-info {background:#eef4fb;border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:12px;line-height:2;}
-.print-table {width:100%;border-collapse:collapse;margin-bottom:14px;}
-.print-table th,.print-table td {border:1px solid #bbb;padding:7px 10px;text-align:center;font-size:13px;}
-.print-table th {background:#2c3e50;color:#fff;font-weight:600;}
-.print-table tr:nth-child(even) {background:#f5f7fa;}
-.print-summary {background:#f5f5f5;border-radius:4px;padding:8px 14px;text-align:right;font-weight:600;font-size:13px;}
-@media print {
-  body > *:not(#printOverlay) {display:none !important;}
-  #printOverlay {display:block !important;position:static !important;padding:0 !important;overflow:visible !important;}
-  .print-overlay-bar {display:none !important;}
-}
 </style>
 <script src="https://unpkg.com/@supabase/supabase-js"></script>
 <script src="supabase-config.js"></script>
@@ -122,15 +103,6 @@ table th,table td {padding: 5px 4px;}
         <div id="orderList">
         </div>
     </div>
-</div>
-
-<!-- 打印预览覆盖层（无需新窗口，兼容iOS微信）-->
-<div id="printOverlay">
-    <div class="print-overlay-bar">
-        <button class="btn-do-print" onclick="doPrint()">🖨 打印 / 保存PDF</button>
-        <button class="btn-close-print" onclick="closePrintOverlay()">✕ 关闭</button>
-    </div>
-    <div id="printContent"></div>
 </div>
 
 <!-- 订单详情模态框 -->
@@ -623,7 +595,7 @@ function cancelEdit() {
     document.getElementById('orderModalTitle').textContent = '订单详情';
 }
 
-// ── 导出订单PDF（当前页面内渲染，彻底兼容iOS微信/Safari）──
+// ── 导出订单PDF（在当前页面内覆盖打印，兼容iPhone Safari）──────
 function exportOrderPDF() {
     if (!currentViewingOrderId) return;
 
@@ -636,7 +608,7 @@ function exportOrderPDF() {
     var totalQuantity = order.items.reduce(function(sum, item) { return sum + item.quantity; }, 0);
 
     var rows = order.items.map(function(item, i) {
-        return '<tr class="print-table-row">' +
+        return '<tr>' +
             '<td>' + (i + 1) + '</td>' +
             '<td>' + item.name + '</td>' +
             '<td>' + item.unit + '</td>' +
@@ -644,34 +616,75 @@ function exportOrderPDF() {
         '</tr>';
     }).join('');
 
-    var html =
-        '<h2>原材料采购订单</h2>' +
-        '<div class="print-info">' +
-            '订单编号：<strong>' + order.id + '</strong>　' +
-            '下单日期：<strong>' + order.date + '</strong><br>' +
-            '下单员工：<strong>' + order.user_name + '</strong>　' +
-            '生成时间：<strong>' + new Date().toLocaleString('zh-CN') + '</strong>' +
+    // 移除旧的打印层（如果存在）
+    var old = document.getElementById('__printLayer');
+    if (old) old.remove();
+
+    // 在当前页面内创建全屏打印覆盖层，避免 window.open 被 Safari 拦截
+    var layer = document.createElement('div');
+    layer.id = '__printLayer';
+    layer.innerHTML =
+        '<div id="__printContent">' +
+            '<h2>原材料采购订单</h2>' +
+            '<div class="__pinfo">' +
+                '<span>订单编号：<strong>' + order.id + '</strong></span>' +
+                '<span>下单日期：<strong>' + order.date + '</strong></span>' +
+                '<span>下单员工：<strong>' + order.user_name + '</strong></span>' +
+                '<span>生成时间：<strong>' + new Date().toLocaleString('zh-CN') + '</strong></span>' +
+            '</div>' +
+            '<table>' +
+                '<thead><tr><th>序号</th><th>产品名称</th><th>单位</th><th>数量</th></tr></thead>' +
+                '<tbody>' + rows + '</tbody>' +
+            '</table>' +
+            '<div class="__psummary">共 ' + totalItems + ' 项商品，总数量：' + totalQuantity.toFixed(1) + '</div>' +
         '</div>' +
-        '<table class="print-table">' +
-        '<thead><tr><th>序号</th><th>产品名称</th><th>单位</th><th>数量</th></tr></thead>' +
-        '<tbody>' + rows + '</tbody>' +
-        '</table>' +
-        '<div class="print-summary">共 ' + totalItems + ' 项商品，总数量：' + totalQuantity.toFixed(1) + '</div>';
+        '<div id="__printBar">' +
+            '<button id="__btnClose" onclick="closePrintLayer()">✕ 关闭</button>' +
+            '<button id="__btnPrint" onclick="window.print()">🖨 打印 / 保存PDF</button>' +
+        '</div>';
 
-    document.getElementById('printContent').innerHTML = html;
-    // 关闭订单弹窗，显示打印覆盖层
-    document.getElementById('orderModal').classList.remove('show');
-    document.getElementById('printOverlay').classList.add('show');
-    window.scrollTo(0, 0);
+    document.body.appendChild(layer);
+
+    // 注入打印专用样式（只在打印时隐藏其他一切，只显示打印内容）
+    var styleId = '__printStyle';
+    if (!document.getElementById(styleId)) {
+        var style = document.createElement('style');
+        style.id = styleId;
+        style.textContent =
+            '#__printLayer{' +
+                'position:fixed;top:0;left:0;width:100%;height:100%;' +
+                'background:#fff;z-index:9999;overflow-y:auto;' +
+                'font-family:"PingFang SC","Heiti SC","Microsoft YaHei",sans-serif;' +
+                'color:#222;font-size:13px;' +
+            '}' +
+            '#__printBar{' +
+                'position:sticky;top:0;background:#fff;padding:10px 16px;' +
+                'display:flex;gap:10px;border-bottom:1px solid #eee;z-index:1;' +
+            '}' +
+            '#__btnClose{background:#95a5a6;color:#fff;border:none;padding:10px 20px;border-radius:6px;font-size:15px;cursor:pointer;}' +
+            '#__btnPrint{background:#27ae60;color:#fff;border:none;padding:10px 20px;border-radius:6px;font-size:15px;cursor:pointer;}' +
+            '#__printContent{padding:16px 16px 30px;}' +
+            '#__printContent h2{text-align:center;font-size:20px;margin-bottom:16px;letter-spacing:2px;}' +
+            '.__pinfo{background:#eef4fb;border-radius:6px;padding:10px 14px;margin-bottom:16px;line-height:2.2;font-size:13px;}' +
+            '.__pinfo span{display:inline-block;margin-right:24px;}' +
+            '#__printContent table{width:100%;border-collapse:collapse;margin-bottom:14px;}' +
+            '#__printContent th,#__printContent td{border:1px solid #bbb;padding:8px 10px;text-align:center;}' +
+            '#__printContent th{background:#2c3e50;color:#fff;font-weight:600;}' +
+            '#__printContent tr:nth-child(even){background:#f5f7fa;}' +
+            '.__psummary{background:#f5f5f5;border-radius:4px;padding:10px 14px;text-align:right;font-weight:600;}' +
+            '@media print{' +
+                'body > *:not(#__printLayer){display:none !important;}' +
+                '#__printBar{display:none !important;}' +
+                '#__printLayer{position:static;overflow:visible;}' +
+                '#__printContent{padding:0;}' +
+            '}';
+        document.head.appendChild(style);
+    }
 }
 
-function doPrint() {
-    window.print();
-}
-
-function closePrintOverlay() {
-    document.getElementById('printOverlay').classList.remove('show');
-    document.getElementById('printContent').innerHTML = '';
+function closePrintLayer() {
+    var layer = document.getElementById('__printLayer');
+    if (layer) layer.remove();
 }
 
 function closeOrderModal() {
